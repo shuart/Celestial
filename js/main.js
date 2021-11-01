@@ -16,11 +16,13 @@ var Reports = {
 }
 
 var currentPropPane  = undefined
+let id1= uuidv4()
+let id2= uuidv4()
 var data = {
     nodes:[
         {
-            id:"1",
-            uuid:"1",
+            id:id1,
+            uuid:id1,
             x:0,
             y:0,
             name:"test",
@@ -31,8 +33,8 @@ var data = {
             }
         },
         {
-            id:"2",
-            uuid:"2",
+            id:id2,
+            uuid:id2,
             x:10,
             y:10,
             name:"tesst",
@@ -63,6 +65,7 @@ function updatePropPane(node){
     let PARAMS = node.properties
 
     currentPropPane= new tweakpane.Pane();
+    currentPropPane.addInput(node, 'id');
     currentPropPane.addInput(PARAMS, 'name');
     currentPropPane.addInput(PARAMS, 'value');
     currentPropPane.addInput(PARAMS, 'function');
@@ -143,6 +146,7 @@ function updatePropPane(node){
 }
 
 function startSimulation() {
+    topologicalOrdering(data)
     var speed =1000
     Reports.status.frame =0 
     
@@ -273,6 +277,53 @@ function reloadTree() {
 }
 function deleteLocalData() {
     window.localStorage.clear();
+}
+
+//HELPERS
+
+function topologicalOrdering(data) {
+    let adgencyList = createAdgencyList(data);
+    let order = dfsTopSort(data, adgencyList);
+    console.log(order)
+    
+    function createAdgencyList(data) {
+        let adgencyList = {};
+        data.nodes.forEach(element => {
+            adgencyList[element.id]=[]
+        });
+
+        data.relationships.forEach(element => {
+            console.log(adgencyList,element.source)
+            adgencyList[element.startNode].push(element.endNode)
+        });
+        return adgencyList
+    }
+    function dfsTopSortHelper(v, n, visited, topNums, adjacencyList) {
+        visited[v] = true;
+        const neighbors = adjacencyList[v];
+        for (const neighbor of neighbors) {
+            if (!visited[neighbor]) {
+                n = dfsTopSortHelper(neighbor, n, visited, topNums,adjacencyList);
+            }
+        }
+        topNums[v] = n;
+        return n - 1;
+    }
+
+    function dfsTopSort(data, adgencyList) {
+        const vertices = Object.keys(adgencyList);
+        const visited = {};
+        const topNums = {};
+        let n = vertices.length - 1;
+        for (const v of vertices) {
+            if (!visited[v]) {
+                n = dfsTopSortHelper(v, n, visited, topNums, adgencyList)
+            }
+        }
+        return topNums;
+    }
+    
+    //console.log(dfsTopSort(graph));
 }
 
 
