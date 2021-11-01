@@ -1,8 +1,19 @@
 
 import { stellae } from "./vendor/stellae2.js";
 import tweakpane from 'https://cdn.skypack.dev/tweakpane';
+
+import { v4 as uuidv4 } from  'https://cdn.skypack.dev/uuid';
+
 //const pane = new tweakpane.Pane();
 console.log(stellae)
+
+var Reports = {
+    status:{
+        frame:0,
+        nodes:{}
+    },
+    json:""
+}
 
 var currentPropPane  = undefined
 var data = {
@@ -56,20 +67,27 @@ function updatePropPane(node){
     currentPropPane.addInput(PARAMS, 'value');
     currentPropPane.addInput(PARAMS, 'function');
 
+    currentPropPane.addMonitor(Reports   , 'json', {
+        multiline: true,
+        lineCount: 5,
+      });
+
     const btn = currentPropPane.addButton({
         title: 'execute',
         label: 'counter',   // optional
       });
+
+    
       
-      let count = 0;
-      btn.on('click', () => {
+    let count = 0;
+    btn.on('click', () => {
         count += 1;
         console.log(count);
 
         //var theInstructions = "alert('Hello World'); var x = 100";
         var theInstructions = "return " + "15*8";
 
-        var vars={test:"testdd"}
+        
 
         function createFunction1() {
             
@@ -81,27 +99,116 @@ function updatePropPane(node){
         alert(result)
         console.log(data)
         //return(F());
-      });
+    });
+    const btnAddVariable = currentPropPane.addButton({
+        title: 'Add Variable',
+        label: 'counter',   // optional
+    });
+    btnAddVariable.on('click', () => {
+        addVariableNode()
+    });
+
+    const btnStock = currentPropPane.addButton({
+        title: 'Add Stock',
+        label: 'counter',   // optional
+    });
+    btnStock.on('click', () => {
+        addStockNode()
+    });
+
+    const btnFlux = currentPropPane.addButton({
+        title: 'Add Flux',
+        label: 'counter',   // optional
+    });
+    btnFlux.on('click', () => {
+        addFluxNode()
+    });
+
+    const btnSimulate = currentPropPane.addButton({
+        title: 'Simulate',
+        label: 'counter',   // optional
+    });
+    btnSimulate.on('click', () => {
+        startSimulation()
+    });
+
+    
 }
 
+function startSimulation() {
+    var speed =1000
+    Reports.status.frame =0 
+    
+    step()
+    
+    function step() {
+        console.log(Reports.status.frame)
+        Reports.status.frame++
+        Reports.status.nodes = reportNodeStatus()
+        Reports.json = JSON.stringify(Reports.status, null, 2)
+        setTimeout(step, speed)
+        
+    }
+    
+}
 
+function reportNodeStatus() {
+    resolveNodes()
+    var dataContainer = {}
+    data.nodes.forEach(element => {
+        dataContainer[element.id] = element.properties.value 
+    });
+    return dataContainer
+}
 
-function render(){
-    document.querySelector(".graph").innerHTML=""
-    var graph = new stellae(".graph",{
-        onLinkingEnd :async function (e) {
-            console.log(e);
-            await linkNodes(e[0],e[1])
-            render()
-          },
-          onNodeClick:function (node,eventData) {
-            console.log(node,eventData)
-            updatePropPane(node)
+function resolveNodes() {
+    data.nodes.forEach(element => {
+        element.properties.value = executeNodeFunction(element)
+    });
+}
+
+function executeNodeFunction(node) {
+    if ( node.properties.function != "") {
+        var vars={test:"testdd"}
+        var $={
+            time:Reports.status.frame
+        }
+        function createFunction1() {
             
-          },
-    })
-    graph.updateWithD3Data(data)
+            return new Function ("nodes,$","return " + node.properties.function);
+        }
+    
+        var F=createFunction1()
+        var result = F(vars,$)
+        return result
+    }else{
+        return  node.properties.value
+    }
+    
 }
+
+function addVariableNode() {
+    var name = prompt("node name")
+    data.nodes.push(
+        {
+            id:uuidv4(),
+            uuid:"1",
+            x:0,
+            y:0,
+            name:name,
+            customColor:"#f27506",
+            properties: {
+                type:"variable",
+                name: name,
+                value:5,
+                function:"",
+            }
+        }
+    )
+    render()
+}
+
+
 
 // function update(){
 //     //graph.cleanAll()
@@ -120,6 +227,24 @@ async function linkNodes(node1, node2){
         }
     )
     
+}
+
+
+function render(){
+    document.querySelector(".graph").innerHTML=""
+    var graph = new stellae(".graph",{
+        onLinkingEnd :async function (e) {
+            console.log(e);
+            await linkNodes(e[0],e[1])
+            render()
+          },
+          onNodeClick:function (node,eventData) {
+            console.log(node,eventData)
+            updatePropPane(node)
+            
+          },
+    })
+    graph.updateWithD3Data(data)
 }
 
 
