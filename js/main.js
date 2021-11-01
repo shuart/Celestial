@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from  'https://cdn.skypack.dev/uuid';
 
 //const pane = new tweakpane.Pane();
 console.log(stellae)
+var graph = undefined
 
 var Reports = {
     status:{
@@ -26,6 +27,7 @@ var data = {
             x:0,
             y:0,
             name:"test",
+            customColor:"#f27506",
             properties: {
                 name: "test",
                 value:5,
@@ -38,6 +40,7 @@ var data = {
             x:10,
             y:10,
             name:"tesst",
+            customColor:"#f27506",
             properties: {
                 name: "tesst",
                 value:15,
@@ -66,15 +69,19 @@ function updatePropPane(node){
 
     currentPropPane= new tweakpane.Pane();
     currentPropPane.addInput(node, 'id');
-    currentPropPane.addInput(PARAMS, 'name');
-    currentPropPane.addInput(PARAMS, 'value');
-    currentPropPane.addInput(PARAMS, 'function');
+    currentPropPane.addInput(node.properties, 'name');
+    currentPropPane.addInput(node.properties, 'value');
+    currentPropPane.addInput(node.properties, 'function');
 
     currentPropPane.addMonitor(Reports   , 'json', {
         multiline: true,
         lineCount: 5,
       });
-
+    
+    currentPropPane.on('change', (ev) => {
+        console.log(data);
+        saveTree(data)
+    });
     const btn = currentPropPane.addButton({
         title: 'execute',
         label: 'counter',   // optional
@@ -146,7 +153,7 @@ function updatePropPane(node){
 }
 
 function startSimulation() {
-    topologicalOrdering(data)
+    let orderedGraph = topologicalOrdering(JSON.parse(JSON.stringify(data)))
     var speed =1000
     Reports.status.frame =0 
     
@@ -155,7 +162,7 @@ function startSimulation() {
     function step() {
         console.log(Reports.status.frame)
         Reports.status.frame++
-        Reports.status.nodes = reportNodeStatus()
+        Reports.status.nodes = reportNodeStatus(orderedGraph)
         Reports.json = JSON.stringify(Reports.status, null, 2)
         setTimeout(step, speed)
         
@@ -163,27 +170,32 @@ function startSimulation() {
     
 }
 
-function reportNodeStatus() {
-    resolveNodes()
+function reportNodeStatus(orderedGraph) {
+    resolveNodes(orderedGraph)
     var dataContainer = {}
-    data.nodes.forEach(element => {
+    orderedGraph.orderedNodes.forEach(element => {
         dataContainer[element.id] = element.properties.value 
     });
     return dataContainer
 }
 
-function resolveNodes() {
-    data.nodes.forEach(element => {
-        element.properties.value = executeNodeFunction(element)
+function resolveNodes(orderedGraph) {
+    orderedGraph.orderedNodes.forEach(element => {
+        element.properties.value = executeNodeFunction(orderedGraph.orderedNodes, element, orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id])
     });
 }
 
-function executeNodeFunction(node) {
+function executeNodeFunction(nodes, node, parents, children) {
     if ( node.properties.function != "") {
-        var vars={test:"testdd"}
+        var vars={}
+        parents.forEach(element => {
+            var parentNode = nodes.find(n=> n.id == element)
+            vars[ ""+parentNode.name+""]=parentNode.properties.value
+        });
         var $={
             time:Reports.status.frame
         }
+        console.log(node.id, vars);
         function createFunction1() {
             
             return new Function ("nodes,$","return " + node.properties.function);
@@ -200,10 +212,11 @@ function executeNodeFunction(node) {
 
 function addVariableNode() {
     var name = prompt("node name")
+    let newId = uuidv4()
     data.nodes.push(
         {
-            id:uuidv4(),
-            uuid:"1",
+            id:newId,
+            uuid:newId,
             x:0,
             y:0,
             name:name,
@@ -231,7 +244,7 @@ async function linkNodes(node1, node2){
     //data.nodes = []
     data.relationships.push(
         {
-            id:'efesfsefes',
+            id:uuidv4(),
             startNode:node1.id,
             endNode:node2.id,
             source:node1.id,
@@ -243,29 +256,51 @@ async function linkNodes(node1, node2){
 
 function start() {
     data = reloadTree() || data
+    if (data.nodesPositions) {
+        data.nodesPositions.forEach(f =>{
+            var match = data.nodes.find(c => c.uuid == f.uuid)
+            if (match) {
+              match.fx =f.fx ; match.x =f.fx;
+              match.fy=f.fy; match.y =f.fy;
+            }
+          })
+    }
     console.log(reloadTree() );
     render()
+    
 }
 
 function update() {
+    data.nodesPositions = graph.exportNodesPosition()
     saveTree(data)
+    //console.log(graph.exportNodesPosition())
     render()
 }
 function render(){
     document.querySelector(".graph").innerHTML=""
-    var graph = new stellae(".graph",{
+    graph = new stellae(".graph",{
         onLinkingEnd :async function (e) {
             console.log(e);
             await linkNodes(e[0],e[1])
+
+            console.log("save tree",graph.exportNodesPosition());
+            data.nodesPositions = graph.exportNodesPosition()
+            saveTree(data)
             update()
           },
           onNodeClick:function (node,eventData) {
             console.log(node,eventData)
-            updatePropPane(node)
+            updatePropPane(data.nodes.find(n=>n.uuid == node.uuid))
+            
+          },
+          onNodeDragEnd:function (node,eventData) {
+              console.log("save tree",graph.exportNodesPosition());
+            data.nodesPositions = graph.exportNodesPosition()
+            saveTree(data)
             
           },
     })
-    graph.updateWithD3Data(data)
+    graph.updateWithD3Data(JSON.parse(JSON.stringify(data)))
 }
 
 function saveTree(data) {
@@ -283,8 +318,20 @@ function deleteLocalData() {
 
 function topologicalOrdering(data) {
     let adgencyList = createAdgencyList(data);
+    let parentsList = createParentsList(data);
     let order = dfsTopSort(data, adgencyList);
     console.log(order)
+    let ordered = data.nodes.sort((a,b)=>{
+        return order[a.id]>order[b.id]
+    })
+    console.log(ordered)
+    return {
+        orderedNodes:ordered,
+        order:order,
+        adgencyList:adgencyList,
+        parentsList:parentsList,
+    }
+    
     
     function createAdgencyList(data) {
         let adgencyList = {};
@@ -297,6 +344,18 @@ function topologicalOrdering(data) {
             adgencyList[element.startNode].push(element.endNode)
         });
         return adgencyList
+    }
+    function createParentsList(data) {
+        let parentsList = {};
+        data.nodes.forEach(element => {
+            parentsList[element.id]=[]
+        });
+
+        data.relationships.forEach(element => {
+            console.log(adgencyList,element.source)
+            parentsList[element.endNode].push(element.startNode)
+        });
+        return parentsList
     }
     function dfsTopSortHelper(v, n, visited, topNums, adjacencyList) {
         visited[v] = true;

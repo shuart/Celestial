@@ -2138,13 +2138,26 @@ export function stellae(_selector, _options) {
         return VERSION;
     }
 
-    function importNodesPosition() {
-        nodes.forEach(function (n) {
-          // n.fx = 10;
-          // n.fy = 100;
-          // n.x = 10;
-          // n.y = 100;
+    function importNodesPosition(positions) {
+        // nodes.forEach(function (n) {
+        //   // n.fx = 10;
+        //   // n.fy = 100;
+        //   // n.x = 10;
+        //   // n.y = 100;
+        // })
+        positions.forEach(f =>{
+          console.log(f);
+          var match = nodes.find(c => c.edata.uuid == f.uuid)
+          console.log(match, nodes);
+          if (match) {
+            console.log("zzzzz");
+            console.log(f.fx);
+            match.vx =f.fx ; match.x =f.fx;
+            match.vy=f.fy; match.y =f.fy;
+          }
         })
+        console.log(nodes)
+        
         simulation.nodes(nodes);
     }
     function setFadeOtherNodesOnHoover(value) {
