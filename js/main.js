@@ -4,15 +4,19 @@ import tweakpane from 'https://cdn.skypack.dev/tweakpane';
 
 import { v4 as uuidv4 } from  'https://cdn.skypack.dev/uuid';
 
+import apexcharts from 'https://cdn.skypack.dev/apexcharts';
+
 //const pane = new tweakpane.Pane();
 console.log(stellae)
 var graph = undefined
+var dataGraph = undefined
 
 var Reports = {
     status:{
         frame:0,
         nodes:{}
     },
+    graph:{},
     json:""
 }
 
@@ -166,6 +170,10 @@ function startSimulation() {
         console.log(Reports.status.frame)
         Reports.status.frame++
         Reports.status.nodes = reportNodeStatus(orderedGraph)
+        archiveStatus(orderedGraph, Reports.graph, Reports.status.nodes)
+        updateChart()
+
+        console.log(Reports.graph)
         Reports.json = JSON.stringify(Reports.status, null, 2)
         setTimeout(step, speed)
         
@@ -180,6 +188,22 @@ function reportNodeStatus(orderedGraph) {
         dataContainer[element.id] = {name:element.name, value:element.properties.value }
     });
     return dataContainer
+}
+
+function archiveStatus(orderedGraph, archive, current) {
+    // orderedGraph.orderedNodes.forEach(element => {
+    //     if (!archive[element.id]) {
+    //         archive[element.id] = []
+    //     }
+    //     archive[element.id].push(current[element.id].value)
+    // });
+    orderedGraph.orderedNodes.forEach(element => {
+        if (!archive[element.id]) {
+            archive[element.id] = []
+        }
+        archive[element.id].push(current[element.id].value)
+    });
+    return archive
 }
 
 function resolveNodes(orderedGraph) {
@@ -199,6 +223,16 @@ function executeNodeFunction(nodes, node, parents, children) {
                 var parentNode = nodes.find(n=> n.id == element)
                 vars[ ""+parentNode.name+""]=parentNode.properties.value
             });
+            if (node.properties.type == "flux") {
+                children.forEach(element => {
+                    
+                    var childNode = nodes.find(n=> n.id == element)
+                    if (childNode.properties.type =="stock") {
+                        vars[ ""+childNode.name+""]=childNode.properties.value
+                    }
+                    
+                });
+            }
             var $={
                 time:Reports.status.frame
             }
@@ -338,6 +372,7 @@ function start() {
     }
     console.log(reloadTree() );
     render()
+    setUpDataGraph()
     
 }
 
@@ -383,6 +418,40 @@ function reloadTree() {
 }
 function deleteLocalData() {
     window.localStorage.clear();
+}
+
+function setUpDataGraph() {
+    var options = {
+        chart: {
+          type: 'line'
+        },
+        series: [{
+          name: 'sales',
+          data: [30,40,35,50,49,60,70,91,125]
+        }],
+        // xaxis: {
+        //   categories: [1991,1992,1993,1994,1995,1996,1997, 1998,1999]
+        // }
+      }
+      
+      chart = new apexcharts(document.querySelector("#chart"), options);
+      
+      chart.render();
+}
+
+function updateChart() {
+
+    let newSeries = []
+    for (const key in Reports.graph) {
+        if (Reports.graph.hasOwnProperty.call(Reports.graph, key)) {
+            const element = Reports.graph[key];
+            newSeries.push({
+                name: key,
+                data: element
+              })
+        }
+    }
+    chart.updateSeries(newSeries)
 }
 
 //HELPERS
