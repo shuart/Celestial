@@ -30,6 +30,7 @@ var data = {
             customColor:"#f27506",
             properties: {
                 name: "test",
+                type:"variable",
                 value:5,
                 function:"",
             }
@@ -43,6 +44,7 @@ var data = {
             customColor:"#f27506",
             properties: {
                 name: "tesst",
+                type:"variable",
                 value:15,
                 function:"",
             }
@@ -70,6 +72,7 @@ function updatePropPane(node){
     currentPropPane= new tweakpane.Pane();
     currentPropPane.addInput(node, 'id');
     currentPropPane.addInput(node.properties, 'name');
+    currentPropPane.addInput(node.properties, 'type');
     currentPropPane.addInput(node.properties, 'value');
     currentPropPane.addInput(node.properties, 'function');
 
@@ -174,7 +177,7 @@ function reportNodeStatus(orderedGraph) {
     resolveNodes(orderedGraph)
     var dataContainer = {}
     orderedGraph.orderedNodes.forEach(element => {
-        dataContainer[element.id] = element.properties.value 
+        dataContainer[element.id] = {name:element.name, value:element.properties.value }
     });
     return dataContainer
 }
@@ -182,31 +185,55 @@ function reportNodeStatus(orderedGraph) {
 function resolveNodes(orderedGraph) {
     orderedGraph.orderedNodes.forEach(element => {
         element.properties.value = executeNodeFunction(orderedGraph.orderedNodes, element, orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id])
+        if (element.properties.type == "flux") { //if node is a flux update nearby stocks
+            updateNearbyStocks(orderedGraph.orderedNodes, element,orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id])
+        }
     });
 }
 
 function executeNodeFunction(nodes, node, parents, children) {
-    if ( node.properties.function != "") {
-        var vars={}
-        parents.forEach(element => {
-            var parentNode = nodes.find(n=> n.id == element)
-            vars[ ""+parentNode.name+""]=parentNode.properties.value
-        });
-        var $={
-            time:Reports.status.frame
+    if (node.properties.type == "variable" || node.properties.type == "flux") {
+        if ( node.properties.function != "") {
+            var vars={}
+            parents.forEach(element => {
+                var parentNode = nodes.find(n=> n.id == element)
+                vars[ ""+parentNode.name+""]=parentNode.properties.value
+            });
+            var $={
+                time:Reports.status.frame
+            }
+            console.log(node.id, vars);
+            function createFunction1() {
+                
+                return new Function ("nodes,$","return " + node.properties.function);
+            }
+        
+            var F=createFunction1()
+            var result = F(vars,$)
+            return result
+        }else{
+            return  node.properties.value
         }
-        console.log(node.id, vars);
-        function createFunction1() {
-            
-            return new Function ("nodes,$","return " + node.properties.function);
-        }
-    
-        var F=createFunction1()
-        var result = F(vars,$)
-        return result
-    }else{
+    } 
+    if (node.properties.type == "stock") {
         return  node.properties.value
-    }
+    }  
+}
+
+function updateNearbyStocks(nodes, node, parents, children) {
+    //check parents first
+    parents.forEach(element => {
+        var parentNode = nodes.find(n=> n.id == element)
+        if (parentNode.properties.type == "stock") {
+            parentNode.properties.value -= node.properties.value
+        }
+    });
+    children.forEach(element => {
+        var childrenNode = nodes.find(n=> n.id == element)
+        if (childrenNode.properties.type == "stock") {
+            childrenNode.properties.value += node.properties.value
+        }
+    });
     
 }
 
@@ -223,6 +250,50 @@ function addVariableNode() {
             customColor:"#f27506",
             properties: {
                 type:"variable",
+                name: name,
+                value:5,
+                function:"",
+            }
+        }
+    )
+    update()
+}
+
+function addStockNode() {
+    var name = prompt("node name")
+    let newId = uuidv4()
+    data.nodes.push(
+        {
+            id:newId,
+            uuid:newId,
+            x:0,
+            y:0,
+            name:name,
+            customColor:"#089bc3",
+            properties: {
+                type:"stock",
+                name: name,
+                value:5,
+                function:"",
+            }
+        }
+    )
+    update()
+}
+
+function addFluxNode() {
+    var name = prompt("node name")
+    let newId = uuidv4()
+    data.nodes.push(
+        {
+            id:newId,
+            uuid:newId,
+            x:0,
+            y:0,
+            name:name,
+            customColor:"#ba4bca",
+            properties: {
+                type:"flux",
                 name: name,
                 value:5,
                 function:"",
