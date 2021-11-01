@@ -48,7 +48,7 @@ var data = {
     groups:[]
 }
 
-render()
+start()
 
 function updatePropPane(node){
     if(currentPropPane){
@@ -131,6 +131,13 @@ function updatePropPane(node){
     btnSimulate.on('click', () => {
         startSimulation()
     });
+    const btnClearData = currentPropPane.addButton({
+        title: 'clear local data',
+        label: 'counter',   // optional
+    });
+    btnClearData.on('click', () => {
+        deleteLocalData()
+    });
 
     
 }
@@ -205,8 +212,9 @@ function addVariableNode() {
             }
         }
     )
-    render()
+    update()
 }
+
 
 
 
@@ -229,14 +237,23 @@ async function linkNodes(node1, node2){
     
 }
 
+function start() {
+    data = reloadTree() || data
+    console.log(reloadTree() );
+    render()
+}
 
+function update() {
+    saveTree(data)
+    render()
+}
 function render(){
     document.querySelector(".graph").innerHTML=""
     var graph = new stellae(".graph",{
         onLinkingEnd :async function (e) {
             console.log(e);
             await linkNodes(e[0],e[1])
-            render()
+            update()
           },
           onNodeClick:function (node,eventData) {
             console.log(node,eventData)
@@ -247,6 +264,16 @@ function render(){
     graph.updateWithD3Data(data)
 }
 
+function saveTree(data) {
+    window.localStorage.setItem('lastTree', JSON.stringify(data));
+}
+function reloadTree() {
+    const tree = window.localStorage.getItem('lastTree');
+    return JSON.parse(tree)
+}
+function deleteLocalData() {
+    window.localStorage.clear();
+}
 
 
 
