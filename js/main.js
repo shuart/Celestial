@@ -10,6 +10,7 @@ import apexcharts from 'https://cdn.skypack.dev/apexcharts';
 console.log(stellae)
 var graph = undefined
 var dataGraph = undefined
+var selectedNode = undefined
 
 var Reports = {
     status:{
@@ -23,6 +24,9 @@ var Reports = {
 var currentPropPane  = undefined
 let id1= uuidv4()
 let id2= uuidv4()
+var currentPastedData ={
+    toImport:"Past here to import"
+}
 var data = {
     nodes:[
         {
@@ -79,43 +83,52 @@ function updatePropPane(node){
     currentPropPane.addInput(node.properties, 'type');
     currentPropPane.addInput(node.properties, 'value');
     currentPropPane.addInput(node.properties, 'function');
+    
 
     currentPropPane.addMonitor(Reports   , 'json', {
         multiline: true,
         lineCount: 5,
       });
     
+    currentPropPane.addInput(currentPastedData, 'toImport');
     currentPropPane.on('change', (ev) => {
         console.log(data);
         saveTree(data)
     });
-    const btn = currentPropPane.addButton({
-        title: 'execute',
-        label: 'counter',   // optional
-      });
+    // const btn = currentPropPane.addButton({
+    //     title: 'execute',
+    //     label: 'counter',   // optional
+    //   });
 
     
       
-    let count = 0;
-    btn.on('click', () => {
-        count += 1;
-        console.log(count);
+    // let count = 0;
+    // btn.on('click', () => {
+    //     count += 1;
+    //     console.log(count);
 
-        //var theInstructions = "alert('Hello World'); var x = 100";
-        var theInstructions = "return " + "15*8";
+    //     //var theInstructions = "alert('Hello World'); var x = 100";
+    //     var theInstructions = "return " + "15*8";
 
         
 
-        function createFunction1() {
+    //     function createFunction1() {
             
-            return new Function ("nodes","return " + PARAMS.function);
-        }
+    //         return new Function ("nodes","return " + PARAMS.function);
+    //     }
 
-        var F=createFunction1()
-        var result = F(vars)
-        alert(result)
-        console.log(data)
-        //return(F());
+    //     var F=createFunction1()
+    //     var result = F(vars)
+    //     alert(result)
+    //     console.log(data)
+    //     //return(F());
+    // });
+    const btnDeleteNode = currentPropPane.addButton({
+        title: 'delete node',
+        label: 'counter',   // optional
+    });
+    btnDeleteNode.on('click', () => {
+        deleteNode()
     });
     const btnAddVariable = currentPropPane.addButton({
         title: 'Add Variable',
@@ -154,6 +167,22 @@ function updatePropPane(node){
     });
     btnClearData.on('click', () => {
         deleteLocalData()
+    });
+    const btnExportData = currentPropPane.addButton({
+        title: 'export',
+        label: 'counter',   // optional
+    });
+    btnExportData.on('click', () => {
+        exportData()
+    });
+    const btnImportData = currentPropPane.addButton({
+        title: 'import',
+        label: 'counter',   // optional
+    });
+    btnImportData.on('click', () => {
+        let newData = JSON.parse(currentPastedData.toImport)
+        data=newData
+        update()
     });
 
     
@@ -199,9 +228,12 @@ function archiveStatus(orderedGraph, archive, current) {
     // });
     orderedGraph.orderedNodes.forEach(element => {
         if (!archive[element.id]) {
-            archive[element.id] = []
+            archive[element.id] = {
+                name:element.name,
+                data :[]
+            }
         }
-        archive[element.id].push(current[element.id].value)
+        archive[element.id].data.push(current[element.id].value)
     });
     return archive
 }
@@ -337,6 +369,13 @@ function addFluxNode() {
     update()
 }
 
+function deleteNode() {
+    if (selectedNode) {
+        data.nodes = data.nodes.filter(n=>n.uuid != selectedNode)
+        data.relationships = data.relationships.filter(r=>r.source != selectedNode).filter(r=>r.target != selectedNode)
+    }
+    update()
+}
 
 
 
@@ -397,6 +436,7 @@ function render(){
           onNodeClick:function (node,eventData) {
             console.log(node,eventData)
             updatePropPane(data.nodes.find(n=>n.uuid == node.uuid))
+            selectedNode = node.uuid
             
           },
           onNodeDragEnd:function (node,eventData) {
@@ -418,6 +458,22 @@ function reloadTree() {
 }
 function deleteLocalData() {
     window.localStorage.clear();
+}
+
+function exportData() {
+    console.log(data)
+    
+    const downloadToFile = (content, filename, contentType) => {
+        const a = document.createElement('a');
+        const file = new Blob([content], {type: contentType});
+        
+        a.href= URL.createObjectURL(file);
+        a.download = filename;
+        a.click();
+      
+          URL.revokeObjectURL(a.href);
+    };
+    downloadToFile(JSON.stringify(data), "compass.txt", 'text/plain')
 }
 
 function setUpDataGraph() {
@@ -446,8 +502,8 @@ function updateChart() {
         if (Reports.graph.hasOwnProperty.call(Reports.graph, key)) {
             const element = Reports.graph[key];
             newSeries.push({
-                name: key,
-                data: element
+                name: element.name,
+                data: element.data
               })
         }
     }
