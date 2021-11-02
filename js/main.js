@@ -208,6 +208,7 @@ function startSimulation() {
                 finished:0,
                 isStarting:0,
                 isFinishing :0,
+                elapsed:0,
             }
         }
     });
@@ -266,6 +267,9 @@ function resolveNodes(orderedGraph) {
         if (element.properties.type == "flux") { //if node is a flux update nearby stocks
             updateNearbyStocks(orderedGraph.orderedNodes, element,orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id])
         }
+        if (element.properties.type == "event") { //if node is an event update local status
+            updateEvent(orderedGraph.orderedNodes, element,orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id])
+        }
     });
 }
 
@@ -277,8 +281,8 @@ function executeNodeFunction(nodes, node, parents, children) {
                 var parentNode = nodes.find(n=> n.id == element)
                 vars[ ""+parentNode.name+""]=parentNode.properties.value
                 if (parentNode.properties.type =="event") { //use special prof of events
-                    vars[ ""+childNode.name+"_end"]=childNode._sim.isFinishing
-                    vars[ ""+childNode.name+"_ended"]=childNode._sim.finished
+                    vars[ ""+parentNode.name+"_end"]=parentNode._sim.isFinishing
+                    vars[ ""+parentNode.name+"_ended"]=parentNode._sim.finished
                 }
             });
             if (node.properties.type == "flux") {
@@ -327,6 +331,39 @@ function updateNearbyStocks(nodes, node, parents, children) {
         }
     });
     
+}
+
+function updateEvent(nodes, node, parents, children) {
+    let isActive = true //check if event is active or not
+    parents.forEach(element => {
+        var parentNode = nodes.find(n=> n.id == element)
+        if (parentNode.properties.type == "event") { //if parent is an event, check if finished
+            if (!parentNode._sim.finished) {
+                isActive = false
+            }
+        }
+    });
+    if (isActive) {
+        if (node._sim.elapsed == 0) {
+            node._sim.isStarting = 1
+            node._sim.started=1     
+        }
+        if (node._sim.elapsed > 0) {
+            node._sim.isStarting = 0
+        }
+        if (node._sim.elapsed > node.properties.duration) {
+            node._sim.finished = 1
+            node._sim.isFinishing =1
+            console.log(node.name +" is finished")
+        }
+        if (node._sim.elapsed > node.properties.duration+1) {
+            node._sim.isFinishing =0
+        }
+        node._sim.elapsed ++ 
+        node.properties.value =1
+    }else{
+        node.properties.value =0
+    }
 }
 
 function addVariableNode() {
