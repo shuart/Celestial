@@ -11,6 +11,9 @@ console.log(stellae)
 var graph = undefined
 var dataGraph = undefined
 var selectedNode = undefined
+var localConfig={
+    simSpeed:500
+}
 
 var Reports = {
     status:{
@@ -83,6 +86,7 @@ function updatePropPane(node){
     currentPropPane.addInput(node.properties, 'type');
     currentPropPane.addInput(node.properties, 'value');
     currentPropPane.addInput(node.properties, 'function');
+    currentPropPane.addInput(node.properties, 'observe');
     if (node.properties.type == "event") {
         currentPropPane.addInput(node.properties, 'duration');
     }
@@ -157,6 +161,13 @@ function updatePropPane(node){
         addFluxNode()
     });
 
+    const btnTable = currentPropPane.addButton({
+        title: 'Add Table',
+        label: 'counter',   // optional
+    });
+    btnTable.on('click', () => {
+        addTableNode()
+    });
     const btnEvent = currentPropPane.addButton({
         title: 'Add Event',
         label: 'counter',   // optional
@@ -172,6 +183,10 @@ function updatePropPane(node){
     btnSimulate.on('click', () => {
         startSimulation()
     });
+    currentPropPane.addInput(localConfig, 'simSpeed', {
+        min: 1,
+        max: 2000,
+      });
     const btnClearData = currentPropPane.addButton({
         title: 'clear local data',
         label: 'counter',   // optional
@@ -213,7 +228,6 @@ function startSimulation() {
         }
     });
     let orderedGraph = topologicalOrdering(dupliData)
-    var speed =1000
     Reports.status.frame =0 
     
     step()
@@ -227,7 +241,7 @@ function startSimulation() {
 
         console.log(Reports.graph)
         Reports.json = JSON.stringify(Reports.status, null, 2)
-        setTimeout(step, speed)
+        setTimeout(step, localConfig.simSpeed)
         
     }
     
@@ -253,7 +267,8 @@ function archiveStatus(orderedGraph, archive, current) {
         if (!archive[element.id]) {
             archive[element.id] = {
                 name:element.name,
-                data :[]
+                data :[],
+                visible:element.properties.observe,
             }
         }
         archive[element.id].data.push(current[element.id].value)
@@ -274,6 +289,7 @@ function resolveNodes(orderedGraph) {
 }
 
 function executeNodeFunction(nodes, node, parents, children) {
+    
     if (node.properties.type == "variable" || node.properties.type == "flux"|| node.properties.type == "event") {
         if ( node.properties.function != "") {
             var vars={}
@@ -313,7 +329,14 @@ function executeNodeFunction(nodes, node, parents, children) {
     } 
     if (node.properties.type == "stock") {
         return  node.properties.value
-    }  
+    } 
+    if (node.properties.type == "table") {
+        if (node.properties.function != "" && node.properties.function[0] == "[" ) {
+            let dataArray =JSON.parse(node.properties.function)
+
+            return dataArray[Reports.status.frame] || 1
+        }
+    }
 }
 
 function updateNearbyStocks(nodes, node, parents, children) {
@@ -364,6 +387,9 @@ function updateEvent(nodes, node, parents, children) {
     }else{
         node.properties.value =0
     }
+    if (node._sim.finished) {
+        node.properties.value =0 //set value again to 0
+    }
 }
 
 function addVariableNode() {
@@ -382,6 +408,7 @@ function addVariableNode() {
                 name: name,
                 value:5,
                 function:"",
+                observe:true,
             }
         }
     )
@@ -404,6 +431,7 @@ function addStockNode() {
                 name: name,
                 value:5,
                 function:"",
+                observe:true,
             }
         }
     )
@@ -426,6 +454,29 @@ function addFluxNode() {
                 name: name,
                 value:5,
                 function:"",
+                observe:false,
+            }
+        }
+    )
+    update()
+}
+function addTableNode() {
+    var name = prompt("node name")
+    let newId = uuidv4()
+    data.nodes.push(
+        {
+            id:newId,
+            uuid:newId,
+            x:0,
+            y:0,
+            name:name,
+            customColor:"#ba9bca",
+            properties: {
+                type:"table",
+                name: name,
+                value:1,
+                function:"",
+                observe:false,
             }
         }
     )
@@ -448,6 +499,7 @@ function addEventNode() {
                 value:5,
                 function:"",
                 duration:5,
+                observe:true,
                 
             }
         }
@@ -486,6 +538,7 @@ async function linkNodes(node1, node2){
 
 function start() {
     data = reloadTree() || data
+    updateNodes(data) //for new version
     if (data.nodesPositions) {
         data.nodesPositions.forEach(f =>{
             var match = data.nodes.find(c => c.uuid == f.uuid)
@@ -499,6 +552,14 @@ function start() {
     render()
     setUpDataGraph()
     
+}
+
+function updateNodes(data){
+    data.nodes.forEach(f =>{
+        if (f.properties.observe == undefined) {
+            f.properties.observe = true
+        }
+      })
 }
 
 function update() {
@@ -549,6 +610,9 @@ function render(){
         }
         if (element.properties.type == "event") {
             element.extraLabel = "M256 64C110.06 64 0 125.91 0 208v98.13C0 384.48 114.62 448 256 448s256-63.52 256-141.87V208c0-82.09-110.06-144-256-144zm0 64c106.04 0 192 35.82 192 80 0 9.26-3.97 18.12-10.91 26.39C392.15 208.21 328.23 192 256 192s-136.15 16.21-181.09 42.39C67.97 226.12 64 217.26 64 208c0-44.18 85.96-80 192-80zM120.43 264.64C155.04 249.93 201.64 240 256 240s100.96 9.93 135.57 24.64C356.84 279.07 308.93 288 256 288s-100.84-8.93-135.57-23.36z"
+        }
+        if (element.properties.type == "table") {
+            element.extraLabel = "M464 32H48C21.49 32 0 53.49 0 80v352c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V80c0-26.51-21.49-48-48-48zM224 416H64v-96h160v96zm0-160H64v-96h160v96zm224 160H288v-96h160v96zm0-160H288v-96h160v96z"
         }
     });
     dupliData.relationships.forEach(element => {
@@ -609,10 +673,13 @@ function updateChart() {
     for (const key in Reports.graph) {
         if (Reports.graph.hasOwnProperty.call(Reports.graph, key)) {
             const element = Reports.graph[key];
-            newSeries.push({
-                name: element.name,
-                data: element.data
-              })
+            if (element.visible) {
+                newSeries.push({
+                    name: element.name,
+                    data: element.data
+                  })
+            }
+            
         }
     }
     chart.updateSeries(newSeries)
