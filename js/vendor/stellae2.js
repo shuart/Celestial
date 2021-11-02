@@ -2341,7 +2341,7 @@ export function stellae(_selector, _options) {
 
     function addGlyph(svgPath, group) {
 
-      let svgtxt = `<svg style="cursor:pointer;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" data-id="eWAwvjEVAsZxRs5I">
+      let svgtxt = `<svg style="cursor:pointer;" width="160px" height="160px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" data-id="eWAwvjEVAsZxRs5I">
       <path data-id="eWAwvjEVAsZxRs5I" fill="#ffffff" transform="scale(0.04) translate(10,0)" d="${svgPath}"></path>
     </svg>`
 
