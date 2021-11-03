@@ -345,7 +345,7 @@ export function stellae(_selector, _options) {
 
       //create a helper plane to get position
 
-      plane = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 18, 18), new THREE.MeshBasicMaterial({
+      plane = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000, 18, 18), new THREE.MeshBasicMaterial({
                   color: 0x00ff00,
                   opacity: 0.50,
                   transparent: false

@@ -12,7 +12,10 @@ var graph = undefined
 var dataGraph = undefined
 var selectedNode = undefined
 var localConfig={
-    simSpeed:500
+    simSpeed:500,
+    simPaused:false,
+    simStarted:false,
+    simCurrentOrderedGraph: undefined,
 }
 
 var Reports = {
@@ -187,6 +190,19 @@ function updatePropPane(node){
     btnSimulate.on('click', () => {
         startSimulation()
     });
+    const btnPlayPause= currentPropPane.addButton({
+        title: 'pause/play',
+        label: 'counter',   // optional
+    });
+    btnPlayPause.on('click', () => {
+        if (localConfig.simPaused || !localConfig.simStarted) {
+            startSimulation()
+            
+        }else{
+            localConfig.simPaused =true
+        }
+        
+    });
     currentPropPane.addInput(localConfig, 'simSpeed', {
         min: 1,
         max: 2000,
@@ -219,39 +235,47 @@ function updatePropPane(node){
 }
 
 function startSimulation() {
-    let dupliData = JSON.parse(JSON.stringify(data))
-    dupliData.nodes.forEach(element => {
-        if (element.properties.type == "event") {
-            element._sim = {
-                started:0,
-                finished:0,
-                isStarting:0,
-                isFinishing :0,
-                elapsed:0,
+    if (localConfig.simStarted==false) {
+        localConfig.simStarted = true 
+        //set up simulation if from the start
+        let dupliData = JSON.parse(JSON.stringify(data))
+        dupliData.nodes.forEach(element => {
+            if (element.properties.type == "event") {
+                element._sim = {
+                    started:0,
+                    finished:0,
+                    isStarting:0,
+                    isFinishing :0,
+                    elapsed:0,
+                }
             }
-        }
-        if (element.properties.type == "stock") {
-            element._sim = {
-                previousValue:[],
+            if (element.properties.type == "stock") {
+                element._sim = {
+                    previousValue:[],
+                }
             }
-        }
-    });
-    let orderedGraph = topologicalOrdering(dupliData)
-    Reports.status.frame =0 
-    
+        });
+        localConfig.simCurrentOrderedGraph = topologicalOrdering(dupliData)
+        Reports.status.frame =0 
+        
+    }
+    localConfig.simPaused = false
     step()
     
     function step() {
         console.log(Reports.status.frame)
         
-        Reports.status.nodes = reportNodeStatus(orderedGraph, Reports.status.frame)
-        archiveStatus(orderedGraph, Reports.graph, Reports.status.nodes)
+        Reports.status.nodes = reportNodeStatus(localConfig.simCurrentOrderedGraph, Reports.status.frame)
+        archiveStatus(localConfig.simCurrentOrderedGraph, Reports.graph, Reports.status.nodes)
         updateChart()
 
         console.log(Reports.graph)
         Reports.json = JSON.stringify(Reports.status, null, 2)
         Reports.status.frame++
-        setTimeout(step, localConfig.simSpeed)
+        if (!localConfig.simPaused) {
+            setTimeout(step, localConfig.simSpeed)
+        }
+        
         
     }
     
