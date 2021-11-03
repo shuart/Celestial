@@ -90,6 +90,10 @@ function updatePropPane(node){
     if (node.properties.type == "event") {
         currentPropPane.addInput(node.properties, 'duration');
     }
+    if (node.properties.type == "stock") {
+        currentPropPane.addInput(node.properties, 'canGoNeg');
+        currentPropPane.addInput(node.properties, 'delay');
+    }
     
 
     currentPropPane.addMonitor(Reports   , 'json', {
@@ -226,6 +230,11 @@ function startSimulation() {
                 elapsed:0,
             }
         }
+        if (element.properties.type == "stock") {
+            element._sim = {
+                previousValue:[],
+            }
+        }
     });
     let orderedGraph = topologicalOrdering(dupliData)
     Reports.status.frame =0 
@@ -234,21 +243,22 @@ function startSimulation() {
     
     function step() {
         console.log(Reports.status.frame)
-        Reports.status.frame++
-        Reports.status.nodes = reportNodeStatus(orderedGraph)
+        
+        Reports.status.nodes = reportNodeStatus(orderedGraph, Reports.status.frame)
         archiveStatus(orderedGraph, Reports.graph, Reports.status.nodes)
         updateChart()
 
         console.log(Reports.graph)
         Reports.json = JSON.stringify(Reports.status, null, 2)
+        Reports.status.frame++
         setTimeout(step, localConfig.simSpeed)
         
     }
     
 }
 
-function reportNodeStatus(orderedGraph) {
-    resolveNodes(orderedGraph)
+function reportNodeStatus(orderedGraph, frame) {
+    resolveNodes(orderedGraph, frame)
     var dataContainer = {}
     orderedGraph.orderedNodes.forEach(element => {
         dataContainer[element.id] = {name:element.name, value:element.properties.value }
@@ -276,19 +286,26 @@ function archiveStatus(orderedGraph, archive, current) {
     return archive
 }
 
-function resolveNodes(orderedGraph) {
+function resolveNodes(orderedGraph, frame) {
     orderedGraph.orderedNodes.forEach(element => {
-        element.properties.value = executeNodeFunction(orderedGraph.orderedNodes, element, orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id])
+        element.properties.value = executeNodeFunction(orderedGraph.orderedNodes, element, orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id], frame)
         if (element.properties.type == "flux") { //if node is a flux update nearby stocks
-            updateNearbyStocks(orderedGraph.orderedNodes, element,orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id])
+            updateNearbyStocks(orderedGraph.orderedNodes, element,orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id], frame)
         }
         if (element.properties.type == "event") { //if node is an event update local status
-            updateEvent(orderedGraph.orderedNodes, element,orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id])
+            updateEvent(orderedGraph.orderedNodes, element,orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id], frame)
+        }
+        
+    });
+    orderedGraph.orderedNodes.forEach(element => {
+        if (element.properties.type == "stock") {
+            recordStockValueForDelays(orderedGraph.orderedNodes, element,frame)//record the value of all stock to use for other anim frame
         }
     });
+    
 }
 
-function executeNodeFunction(nodes, node, parents, children) {
+function executeNodeFunction(nodes, node, parents, children, frame) {
     
     if (node.properties.type == "variable" || node.properties.type == "flux"|| node.properties.type == "event") {
         if ( node.properties.function != "") {
@@ -339,24 +356,45 @@ function executeNodeFunction(nodes, node, parents, children) {
     }
 }
 
-function updateNearbyStocks(nodes, node, parents, children) {
+function updateNearbyStocks(nodes, node, parents, children, frame) {
     //check parents first
+    let fluxValue = node.properties.value
+    
     parents.forEach(element => {
         var parentNode = nodes.find(n=> n.id == element)
         if (parentNode.properties.type == "stock") {
-            parentNode.properties.value -= node.properties.value
+            //check if enough in stock
+            let stockValue = parentNode.properties.value 
+            if (parentNode.properties.delay != 0) {
+                console.log(frame, parentNode._sim.previousValue[frame-parentNode.properties.delay ])
+                stockValue = parentNode._sim.previousValue[frame-parentNode.properties.delay ] || 0
+            }
+            console.log("trying check",fluxValue,stockValue)
+            if (!parentNode.properties.canGoNeg && (stockValue - fluxValue <0 ||parentNode.properties.value - fluxValue <0)) { 
+                console.log("trying neeeeeeeeeeeeeg",fluxValue,stockValue)
+                fluxValue = Math.min(stockValue,parentNode.properties.value ) 
+                console.log(fluxValue, parentNode.properties.value)
+            }
+            console.log("reeeeeeeeeeeeeeo",parentNode.properties.value,fluxValue)
+            parentNode.properties.value -= fluxValue
         }
     });
     children.forEach(element => {
         var childrenNode = nodes.find(n=> n.id == element)
         if (childrenNode.properties.type == "stock") {
-            childrenNode.properties.value += node.properties.value
+            childrenNode.properties.value += fluxValue
         }
     });
     
 }
+function recordStockValueForDelays(nodes, node,frame) {
+    if (node.properties.type == "stock") {
+        node._sim.previousValue.push(node.properties.value)
+        return  node.properties.value
+    } 
+}
 
-function updateEvent(nodes, node, parents, children) {
+function updateEvent(nodes, node, parents, children, frame) {
     let isActive = true //check if event is active or not
     parents.forEach(element => {
         var parentNode = nodes.find(n=> n.id == element)
@@ -432,6 +470,8 @@ function addStockNode() {
                 value:5,
                 function:"",
                 observe:true,
+                canGoNeg:false,
+                delay:0,
             }
         }
     )
@@ -515,6 +555,13 @@ function deleteNode() {
     update()
 }
 
+function deleteRelation(uuid) {
+    if (uuid) {
+        data.relationships = data.relationships.filter(n=>n.id != uuid)
+    }
+    update()
+}
+
 
 
 // function update(){
@@ -557,7 +604,11 @@ function start() {
 function updateNodes(data){
     data.nodes.forEach(f =>{
         if (f.properties.observe == undefined) {
-            f.properties.observe = true
+            f.properties.observe = f.properties.observe || true
+        }
+        if (f.properties.type == "stock") {
+            f.properties.canGoNeg = f.properties.canGoNeg || false
+            f.properties.delay = f.properties.delay || 0
         }
       })
 }
@@ -590,8 +641,18 @@ function render(){
               console.log("save tree",graph.exportNodesPosition());
             data.nodesPositions = graph.exportNodesPosition()
             saveTree(data)
-            
           },
+          onRelationshipDoubleClick:function (d) {
+            console.log(d)
+            var confirmed = confirm("delete"+ d.id)
+            if (confirmed) {
+                console.log("delte")
+                deleteRelation(d.id)
+            }
+            data.nodesPositions = graph.exportNodesPosition()
+            saveTree(data)
+          
+        },
     })
 
     //STYLE nodes

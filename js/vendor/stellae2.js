@@ -77,6 +77,7 @@ export function stellae(_selector, _options) {
     var nodesCore = []
     var nodesData = []
     var nodesNotes = []
+    var relationshipTextElement=[]
     var spriteBuffer = []
     var spriteTextureBuffer = []
     var relationshipsData = []
@@ -366,6 +367,7 @@ export function stellae(_selector, _options) {
         //  scene.add(new THREE.ArrowHelper(raycaster.ray.direction, raycaster.ray.origin, 10, 0xff0000) );
          var intersects1 = raycaster.intersectObjects(nodesNotes);
          var intersects2 = raycaster.intersectObjects(nodes);
+         var intersects3 = raycaster.intersectObjects(relationshipTextElement)
          console.log(intersects2);
          if (intersects2.length>0) {
            console.log("node clicked");
@@ -396,6 +398,12 @@ export function stellae(_selector, _options) {
                nodesNotes.push(newText)
              }
            }
+         }else if(intersects3.length>0){
+            console.log("relation clicked");
+            if (typeof options.onNodeClick === 'function') {
+              options.onRelationshipDoubleClick(intersects3[0].object.edata);
+          }
+            
          }
       }
 
@@ -861,7 +869,9 @@ export function stellae(_selector, _options) {
         let text = dcText(relData.displayType, 5, 7, 25, "#a5abb60", 0xffffff);      // text #2, TRANSPARENT
         text.scale.set(0.05,0.05,0.05); // move geometry up and out
         text.position.z= -0.11;
+        text.edata=relData
         relData.relatedObjectText = text
+        relationshipTextElement.push(text)
         instancegroup.add(text)
       }
 
