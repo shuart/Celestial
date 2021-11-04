@@ -77,13 +77,21 @@ start()
 function createSimPane() {
     currentSimPane= new tweakpane.Pane({container:document.querySelector('.simControls')});
 
-    const btnSimulate = currentSimPane.addButton({
+    const tab = currentSimPane.addTab({
+        pages: [
+          {title: 'Simulate'},
+          {title: 'Edit'},
+          {title: 'Save'},
+        ],
+      });
+
+    const btnSimulate = tab.pages[0].addButton({
         title: 'Simulate',
     });
     btnSimulate.on('click', () => {
         startSimulation()
     });
-    const btnPlayPause= currentSimPane.addButton({
+    const btnPlayPause= tab.pages[0].addButton({
         title: 'pause/play',
     });
     btnPlayPause.on('click', () => {
@@ -96,27 +104,27 @@ function createSimPane() {
         
     });
 
-    const pOptions = currentSimPane.addFolder({
-        title: 'Options',
-        expanded: false,   // optional
-      });
-      pOptions.addInput(localConfig, 'simSpeed', {
+    // const pOptions = tab.pages[0].addFolder({
+    //     title: 'Options',
+    //     expanded: false,   // optional
+    //   });
+    tab.pages[0].addInput(localConfig, 'simSpeed', {
         min: 1,
         max: 2000,
       });
-    const btnClearData = pOptions.addButton({
+    const btnClearData = tab.pages[2].addButton({
         title: 'clear local data',
     });
     btnClearData.on('click', () => {
         deleteLocalData()
     });
-    const btnExportData = pOptions.addButton({
+    const btnExportData = tab.pages[2].addButton({
         title: 'export',
     });
     btnExportData.on('click', () => {
         exportData()
     });
-    const btnImportData = pOptions.addButton({
+    const btnImportData = tab.pages[2].addButton({
         title: 'import',
     });
     btnImportData.on('click', () => {
@@ -124,8 +132,9 @@ function createSimPane() {
         data=newData
         update()
     });
-    pOptions.addInput(currentPastedData, 'toImport');
-    const btnToggleChart = pOptions.addButton({
+    tab.pages[2].addInput(currentPastedData, 'toImport');
+
+    const btnToggleChart = tab.pages[0].addButton({
         title: 'Show/hide Chart',
     });
     btnToggleChart.on('click', () => {
@@ -134,6 +143,41 @@ function createSimPane() {
         if (status == "visible") {
             document.querySelector("#chart").style.visibility = "hidden"
         }else{document.querySelector("#chart").style.visibility = "visible" }
+    });
+
+
+    const btnAddVariable = tab.pages[1].addButton({
+        title: 'Add Variable',
+    });
+    btnAddVariable.on('click', () => {
+        addVariableNode()
+    });
+
+    const btnStock = tab.pages[1].addButton({
+        title: 'Add Stock',
+    });
+    btnStock.on('click', () => {
+        addStockNode()
+    });
+
+    const btnFlux = tab.pages[1].addButton({
+        title: 'Add Flux',
+    });
+    btnFlux.on('click', () => {
+        addFluxNode()
+    });
+
+    const btnTable = tab.pages[1].addButton({
+        title: 'Add Table',
+    });
+    btnTable.on('click', () => {
+        addTableNode()
+    });
+    const btnEvent = tab.pages[1].addButton({
+        title: 'Add Event',
+    });
+    btnEvent.on('click', () => {
+        addEventNode()
     });
 }
 
@@ -218,39 +262,7 @@ function updatePropPane(node){
         deleteNode()
     });
     currentPropPane.addSeparator();
-    const btnAddVariable = currentPropPane.addButton({
-        title: 'Add Variable',
-    });
-    btnAddVariable.on('click', () => {
-        addVariableNode()
-    });
 
-    const btnStock = currentPropPane.addButton({
-        title: 'Add Stock',
-    });
-    btnStock.on('click', () => {
-        addStockNode()
-    });
-
-    const btnFlux = currentPropPane.addButton({
-        title: 'Add Flux',
-    });
-    btnFlux.on('click', () => {
-        addFluxNode()
-    });
-
-    const btnTable = currentPropPane.addButton({
-        title: 'Add Table',
-    });
-    btnTable.on('click', () => {
-        addTableNode()
-    });
-    const btnEvent = currentPropPane.addButton({
-        title: 'Add Event',
-    });
-    btnEvent.on('click', () => {
-        addEventNode()
-    });
 
 
 
