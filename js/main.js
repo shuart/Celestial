@@ -43,7 +43,7 @@ var data = {
             uuid:id1,
             x:0,
             y:0,
-            name:"test",
+            name:"variable_1",
             customColor:"#f27506",
             properties: {
                 name: "test",
@@ -57,7 +57,7 @@ var data = {
             uuid:id2,
             x:10,
             y:10,
-            name:"tesst",
+            name:"variable_2",
             customColor:"#f27506",
             properties: {
                 name: "tesst",
