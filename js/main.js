@@ -9,6 +9,7 @@ import apexcharts from 'https://cdn.skypack.dev/apexcharts';
 //const pane = new tweakpane.Pane();
 console.log(stellae)
 var graph = undefined
+var currentGraphTransformation = undefined;
 var chart = undefined;
 var dataGraph = undefined
 var selectedNode = undefined
@@ -204,12 +205,19 @@ function updatePropPane(node){
     // });
 
     currentPropPane.addSeparator();
+    const btnRenameNode = currentPropPane.addButton({
+        title: 'Rename node',
+    });
+    btnRenameNode.on('click', () => {
+        renameNode()
+    });
     const btnDeleteNode = currentPropPane.addButton({
-        title: 'delete node',
+        title: 'Delete node',
     });
     btnDeleteNode.on('click', () => {
         deleteNode()
     });
+    currentPropPane.addSeparator();
     const btnAddVariable = currentPropPane.addButton({
         title: 'Add Variable',
     });
@@ -624,6 +632,17 @@ function deleteNode() {
     update()
 }
 
+function renameNode() {
+    if (selectedNode) {
+        let node = data.nodes.find(n=>n.uuid == selectedNode)
+        var newName = prompt("Update name")
+        if (node && newName) {
+            node.name = newName
+        }
+    }
+    update()
+}
+
 function deleteRelation(uuid) {
     if (uuid) {
         data.relationships = data.relationships.filter(n=>n.id != uuid)
@@ -732,6 +751,12 @@ function render(){
             saveTree(data)
           
         },
+        onCanvasZoom:function (e) {//TODO finish implementation
+            // console.log(e);
+            currentGraphTransformation=e
+          },
+          startTransform:currentGraphTransformation,
+          zoomFit: false
     })
 
     //STYLE nodes
