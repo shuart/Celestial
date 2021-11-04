@@ -9,6 +9,7 @@ import apexcharts from 'https://cdn.skypack.dev/apexcharts';
 //const pane = new tweakpane.Pane();
 console.log(stellae)
 var graph = undefined
+var chart = undefined;
 var dataGraph = undefined
 var selectedNode = undefined
 var localConfig={
@@ -122,6 +123,7 @@ function createSimPane() {
         data=newData
         update()
     });
+    pOptions.addInput(currentPastedData, 'toImport');
     const btnToggleChart = pOptions.addButton({
         title: 'Show/hide Chart',
     });
@@ -146,12 +148,14 @@ function updatePropPane(node){
 
     let PARAMS = node.properties
 
-    currentPropPane= new tweakpane.Pane();
+    currentPropPane= new tweakpane.Pane({title: node.properties.name,});
     currentPropPane.addInput(node, 'id');
     currentPropPane.addInput(node.properties, 'name');
     currentPropPane.addInput(node.properties, 'type');
     currentPropPane.addInput(node.properties, 'value');
     currentPropPane.addInput(node.properties, 'function');
+
+    currentPropPane.addSeparator();
     currentPropPane.addInput(node.properties, 'observe');
     if (node.properties.type == "event") {
         currentPropPane.addInput(node.properties, 'duration');
@@ -161,13 +165,12 @@ function updatePropPane(node){
         currentPropPane.addInput(node.properties, 'delay');
     }
     
-
     // currentPropPane.addMonitor(Reports   , 'json', {
     //     multiline: true,
     //     lineCount: 5,
     //   });
     
-    currentPropPane.addInput(currentPastedData, 'toImport');
+    
     currentPropPane.on('change', (ev) => {
         console.log(data);
         saveTree(data)
@@ -177,8 +180,6 @@ function updatePropPane(node){
     //     label: 'counter',   // optional
     //   });
 
-    
-      
     // let count = 0;
     // btn.on('click', () => {
     //     count += 1;
@@ -200,16 +201,16 @@ function updatePropPane(node){
     //     console.log(data)
     //     //return(F());
     // });
+
+    currentPropPane.addSeparator();
     const btnDeleteNode = currentPropPane.addButton({
         title: 'delete node',
-        label: 'counter',   // optional
     });
     btnDeleteNode.on('click', () => {
         deleteNode()
     });
     const btnAddVariable = currentPropPane.addButton({
         title: 'Add Variable',
-        label: 'counter',   // optional
     });
     btnAddVariable.on('click', () => {
         addVariableNode()
@@ -217,7 +218,6 @@ function updatePropPane(node){
 
     const btnStock = currentPropPane.addButton({
         title: 'Add Stock',
-        label: 'counter',   // optional
     });
     btnStock.on('click', () => {
         addStockNode()
@@ -225,7 +225,6 @@ function updatePropPane(node){
 
     const btnFlux = currentPropPane.addButton({
         title: 'Add Flux',
-        label: 'counter',   // optional
     });
     btnFlux.on('click', () => {
         addFluxNode()
@@ -233,14 +232,12 @@ function updatePropPane(node){
 
     const btnTable = currentPropPane.addButton({
         title: 'Add Table',
-        label: 'counter',   // optional
     });
     btnTable.on('click', () => {
         addTableNode()
     });
     const btnEvent = currentPropPane.addButton({
         title: 'Add Event',
-        label: 'counter',   // optional
     });
     btnEvent.on('click', () => {
         addEventNode()
@@ -657,6 +654,15 @@ async function linkNodes(node1, node2){
 function start() {
     data = reloadTree() || data
     updateNodes(data) //for new version
+    updateNodesPositionsInData(data)
+    console.log(reloadTree() );
+    createSimPane();
+    render()
+    setUpDataGraph()
+    
+}
+
+function updateNodesPositionsInData(data) {
     if (data.nodesPositions) {
         data.nodesPositions.forEach(f =>{
             var match = data.nodes.find(c => c.uuid == f.uuid)
@@ -666,11 +672,6 @@ function start() {
             }
           })
     }
-    console.log(reloadTree() );
-    createSimPane();
-    render()
-    setUpDataGraph()
-    
 }
 
 function updateNodes(data){
@@ -686,10 +687,15 @@ function updateNodes(data){
 }
 
 function update() {
-    data.nodesPositions = graph.exportNodesPosition()
+    updateNodesPositions()
+    
     saveTree(data)
     //console.log(graph.exportNodesPosition())
     render()
+}
+function updateNodesPositions() {
+    data.nodesPositions = graph.exportNodesPosition()
+    updateNodesPositionsInData(data)
 }
 function render(){
     document.querySelector(".graph").innerHTML=""
@@ -700,7 +706,6 @@ function render(){
 
             console.log("save tree",graph.exportNodesPosition());
             data.nodesPositions = graph.exportNodesPosition()
-            saveTree(data)
             update()
           },
           onNodeClick:function (node,eventData) {
@@ -711,8 +716,9 @@ function render(){
           },
           onNodeDragEnd:function (node,eventData) {
               console.log("save tree",graph.exportNodesPosition());
-            data.nodesPositions = graph.exportNodesPosition()
+            updateNodesPositions()
             saveTree(data)
+            //update()
           },
           onRelationshipDoubleClick:function (d) {
             console.log(d)
@@ -721,7 +727,7 @@ function render(){
                 console.log("delte")
                 deleteRelation(d.id)
             }
-            data.nodesPositions = graph.exportNodesPosition()
+            updateNodesPositions()
             saveTree(data)
           
         },
