@@ -45,7 +45,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 [contributors-url]: https://github.com/shuart/Celestial/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/shuart/Celestial.svg?style=for-the-badge
 [forks-url]: https://github.com/shuart/Celestial/network/members
-[stars-shield]: https://img.shields.io/github/shuart/Celestial/repo_name.svg?style=for-the-badge
+[stars-shield]: https://img.shields.io/github/shuart/Celestial.svg?style=for-the-badge
 [stars-url]: https://github.com/shuart/Celestial/stargazers
 [issues-shield]: https://img.shields.io/github/issues/shuart/Celestial.svg?style=for-the-badge
 [issues-url]: https://github.com/shuart/Celestial/issues
