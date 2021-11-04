@@ -254,6 +254,12 @@ function startSimulation() {
                     previousValue:[],
                 }
             }
+            if (element.properties.type == "flux") {
+                element._sim = {
+                    flux:0,
+                    left:0,
+                }
+            }
         });
         localConfig.simCurrentOrderedGraph = topologicalOrdering(dupliData)
         Reports.status.frame =0 
@@ -319,18 +325,31 @@ function resolveNodes(orderedGraph, frame) {
         if (element.properties.type == "event") { //if node is an event update local status
             updateEvent(orderedGraph.orderedNodes, element,orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id], frame)
         }
-        
+        let debug =true
+        if (debug) {
+            console.debug(frame +"|"+element.name +" => "+ element.properties.value)
+            if (element.properties.type == "flux") {
+                console.debug(frame +"|"+element.name +" LEFT => "+ element._sim.left)
+                console.debug(frame +"|"+element.name +" FLUX => "+ element._sim.flux)
+                
+            }
+        }
     });
     orderedGraph.orderedNodes.forEach(element => {
         if (element.properties.type == "stock") {
-            recordStockValueForDelays(orderedGraph.orderedNodes, element,frame)//record the value of all stock to use for other anim frame
+            recordStockValueForDelays(orderedGraph.orderedNodes, element,frame)//record the value of all stock to use for other anim frame and update current value
+            let debug =true
+            if (debug) {
+                console.debug(frame +"|S"+element.name +" => "+ element.properties.value)
+            }
         }
+        
     });
     
 }
 
 function executeNodeFunction(nodes, node, parents, children, frame) {
-    
+    let nodeValue = undefined
     if (node.properties.type == "variable" || node.properties.type == "flux"|| node.properties.type == "event") {
         if ( node.properties.function != "") {
             var vars={}
@@ -340,6 +359,10 @@ function executeNodeFunction(nodes, node, parents, children, frame) {
                 if (parentNode.properties.type =="event") { //use special prof of events
                     vars[ ""+parentNode.name+"_end"]=parentNode._sim.isFinishing
                     vars[ ""+parentNode.name+"_ended"]=parentNode._sim.finished
+                }
+                if (parentNode.properties.type =="flux") { //use special prof of events
+                    vars[ ""+parentNode.name+"_flux"]=parentNode._sim.flux
+                    vars[ ""+parentNode.name+"_left"]=parentNode._sim.left//TODO not working
                 }
             });
             if (node.properties.type == "flux") {
@@ -363,21 +386,23 @@ function executeNodeFunction(nodes, node, parents, children, frame) {
         
             var F=createFunction1()
             var result = F(vars,$)
-            return result
+            nodeValue= result
         }else{
-            return  node.properties.value
+            nodeValue=  node.properties.value
         }
     } 
     if (node.properties.type == "stock") {
-        return  node.properties.value
+        nodeValue=  node.properties.value
     } 
     if (node.properties.type == "table") {
         if (node.properties.function != "" && node.properties.function[0] == "[" ) {
             let dataArray =JSON.parse(node.properties.function)
 
-            return dataArray[Reports.status.frame] || 1
+            nodeValue= dataArray[Reports.status.frame] || 1
         }
     }
+    
+    return nodeValue
 }
 
 function updateNearbyStocks(nodes, node, parents, children, frame) {
@@ -401,6 +426,9 @@ function updateNearbyStocks(nodes, node, parents, children, frame) {
             }
             console.log("reeeeeeeeeeeeeeo",parentNode.properties.value,fluxValue)
             parentNode.properties.value -= fluxValue
+
+            node._sim.flux = fluxValue
+            node._sim.left = parentNode.properties.value
         }
     });
     children.forEach(element => {
@@ -409,6 +437,7 @@ function updateNearbyStocks(nodes, node, parents, children, frame) {
             childrenNode.properties.value += fluxValue
         }
     });
+    
     
 }
 function recordStockValueForDelays(nodes, node,frame) {
