@@ -138,7 +138,8 @@ function createSimPane() {
 
 function updatePropPane(node){
     if(currentPropPane){
-        currentPropPane.remove
+       // currentPropPane.remove()
+       document.querySelector('.nodeControls').innerHTML=''
     }
 
     // const PARAMS = {
@@ -148,7 +149,7 @@ function updatePropPane(node){
 
     let PARAMS = node.properties
 
-    currentPropPane= new tweakpane.Pane({title: node.properties.name,});
+    currentPropPane= new tweakpane.Pane({title: node.properties.name,container: document.querySelector('.nodeControls')});
     currentPropPane.addInput(node, 'id');
     currentPropPane.addInput(node.properties, 'name');
     currentPropPane.addInput(node.properties, 'type');
