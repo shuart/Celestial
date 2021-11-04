@@ -282,7 +282,7 @@ export function stellae(_selector, _options) {
       mainMaterial = new THREE.MeshBasicMaterial( { color: 0x35bdb2 } );
       cube = new THREE.Mesh( geometry, material );
       cube.position.x = 5
-      scene.add(cube)
+      // scene.add(cube)
 
       selectedObject = undefined
       nodes = []
@@ -2334,7 +2334,9 @@ export function stellae(_selector, _options) {
      borderCircle.position.set(0.0,0.0,-0.008)
      borderCircle.edata = data
 
-     let title = makeTextSprite( data.name, {} )
+     //let title = makeTextSprite( data.name, {} )
+     let title =dcText(data.name, 5, 7, 25, 0x464646,);
+     title.scale.set(0.06,0.06,0.06)
      title.position.set(0,-0.8,-0.0001)
      var group = new THREE.Group();
      group.edata = data
