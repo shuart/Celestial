@@ -84,7 +84,8 @@ function createSimPane() {
           {title: 'Save'},
         ],
       });
-
+    
+    tab.pages[0].addMonitor(Reports.status, 'frame', {});
     const btnSimulate = tab.pages[0].addButton({
         title: 'Simulate',
     });
@@ -112,7 +113,7 @@ function createSimPane() {
         min: 1,
         max: 2000,
       });
-
+    tab.pages[0].addSeparator();
     const btnToggleChart = tab.pages[0].addButton({
     title: 'Show/hide Chart',
     });
@@ -188,6 +189,12 @@ function createSimPane() {
     btnEvent.on('click', () => {
         addEventNode()
     });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key == "ArrowRight") {
+            simulateNextStep()
+        }
+    })
 }
 
 function updatePropPane(node){
@@ -313,23 +320,28 @@ function startSimulation() {
     localConfig.simPaused = false
     step()
     
-    function step() {
-        console.log(Reports.status.frame)
-        
-        Reports.status.nodes = reportNodeStatus(localConfig.simCurrentOrderedGraph, Reports.status.frame)
-        archiveStatus(localConfig.simCurrentOrderedGraph, Reports.graph, Reports.status.nodes)
-        updateChart()
-        updateGraphLabels()
-
-        console.log(Reports.graph)
-        Reports.json = JSON.stringify(Reports.status, null, 2)
-        Reports.status.frame++
-        if (!localConfig.simPaused) {
-            setTimeout(step, localConfig.simSpeed)
-        }
-        
-        
+}
+function simulateNextStep() {
+    if (localConfig.simStarted==true) {
+        step()
     }
+}
+
+function step() {
+    console.log(Reports.status.frame)
+    
+    Reports.status.nodes = reportNodeStatus(localConfig.simCurrentOrderedGraph, Reports.status.frame)
+    archiveStatus(localConfig.simCurrentOrderedGraph, Reports.graph, Reports.status.nodes)
+    updateChart()
+    updateGraphLabels()
+
+    console.log(Reports.graph)
+    Reports.json = JSON.stringify(Reports.status, null, 2)
+    Reports.status.frame++
+    if (!localConfig.simPaused) {
+        setTimeout(step, localConfig.simSpeed)
+    }
+    
     
 }
 
