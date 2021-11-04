@@ -15,7 +15,7 @@
   <h3 align="center">Celestial</h3>
 
   <p align="center">
-    Small mix methode System Design tool
+    Small mixed methods System Design tool
     <br />
     <!-- <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the docs »</strong></a>
     <br /> -->
