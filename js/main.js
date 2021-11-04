@@ -112,6 +112,24 @@ function createSimPane() {
         min: 1,
         max: 2000,
       });
+
+    const btnToggleChart = tab.pages[0].addButton({
+    title: 'Show/hide Chart',
+    });
+    btnToggleChart.on('click', () => {
+        let status = document.querySelector("#chart").style.visibility
+        console.log(status)
+        if (status == "visible") {
+            document.querySelector("#chart").style.visibility = "hidden"
+        }else{document.querySelector("#chart").style.visibility = "visible" }
+    });
+    const btnHideLabels= tab.pages[0].addButton({
+        title: 'Hide labels',
+    });
+    btnHideLabels.on('click', () => {
+        graph.clearAllLabels()
+    });
+
     const btnClearData = tab.pages[2].addButton({
         title: 'clear local data',
     });
@@ -134,16 +152,7 @@ function createSimPane() {
     });
     tab.pages[2].addInput(currentPastedData, 'toImport');
 
-    const btnToggleChart = tab.pages[0].addButton({
-        title: 'Show/hide Chart',
-    });
-    btnToggleChart.on('click', () => {
-        let status = document.querySelector("#chart").style.visibility
-        console.log(status)
-        if (status == "visible") {
-            document.querySelector("#chart").style.visibility = "hidden"
-        }else{document.querySelector("#chart").style.visibility = "visible" }
-    });
+   
 
 
     const btnAddVariable = tab.pages[1].addButton({
@@ -310,6 +319,7 @@ function startSimulation() {
         Reports.status.nodes = reportNodeStatus(localConfig.simCurrentOrderedGraph, Reports.status.frame)
         archiveStatus(localConfig.simCurrentOrderedGraph, Reports.graph, Reports.status.nodes)
         updateChart()
+        updateGraphLabels()
 
         console.log(Reports.graph)
         Reports.json = JSON.stringify(Reports.status, null, 2)
@@ -343,6 +353,7 @@ function archiveStatus(orderedGraph, archive, current) {
         if (!archive[element.id]) {
             archive[element.id] = {
                 name:element.name,
+                id:element.id,
                 data :[],
                 visible:element.properties.observe,
             }
@@ -856,10 +867,25 @@ function updateChart() {
                     data: element.data
                   })
             }
-            
         }
     }
     chart.updateSeries(newSeries)
+}
+
+function updateGraphLabels() {
+
+    let labelObject = {}
+    graph.clearAllLabels()
+
+    for (const key in Reports.graph) {
+        if (Reports.graph.hasOwnProperty.call(Reports.graph, key)) {
+            const element = Reports.graph[key];
+            if (element.visible) {
+                labelObject[element.id]={label:element.data[element.data.length-1]}
+            }
+        }
+    }
+    graph.labelNodes(labelObject)
 }
 
 //HELPERS

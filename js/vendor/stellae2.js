@@ -978,6 +978,33 @@ export function stellae(_selector, _options) {
     function updateFromSimulation() {
     }
 
+    function labelNodes(labels) {//data should be {uuid:{label:"label"} }
+
+      for (let index = 0; index < nodesData.length; index++) {
+        const element = nodesData[index];
+        if (labels[element.uuid]) {
+          //Create label
+          let label =dcText(labels[element.uuid].label, 4, 7, 25, 0xffffff,0x626262);
+          label.scale.set(0.06,0.06,0.06)
+          label.position.set(+0.5,+0.8,-0.0001)
+          label.name="label"
+          //group.add( label )
+          element.relatedObject.add( label )
+        }
+      }
+    }
+    function clearAllLabels(labels) {
+
+      for (let index = 0; index < nodesData.length; index++) {
+        const element = nodesData[index];
+        let label = element.relatedObject.children.find(o=>o.name=="label")
+        if (label) {
+          element.relatedObject.remove(label);
+        }
+        
+      }
+    }
+
     function exportNodesPosition(condition) {
       var exportedData = []
       if (condition == "all") {
@@ -2637,6 +2664,8 @@ export function stellae(_selector, _options) {
         setFadeOtherNodesOnHoover: setFadeOtherNodesOnHoover,
         getSelectedNodes: getSelectedNodes,
         getScreenshot: getScreenshot,
+        labelNodes:labelNodes,
+        clearAllLabels:clearAllLabels,
         // getCurrentMousePosition: getCurrentMousePosition,
         getlocalMousePositionFromLayerMousePosition: getlocalMousePositionFromLayerMousePosition,
         cleanAll: cleanAll,
