@@ -28,6 +28,7 @@ var Reports = {
 }
 
 var currentPropPane  = undefined
+var currentSimPane  = undefined
 let id1= uuidv4()
 let id2= uuidv4()
 var currentPastedData ={
@@ -71,6 +72,68 @@ var data = {
 
 start()
 
+function createSimPane() {
+    currentSimPane= new tweakpane.Pane({container:document.querySelector('.simControls')});
+
+    const btnSimulate = currentSimPane.addButton({
+        title: 'Simulate',
+    });
+    btnSimulate.on('click', () => {
+        startSimulation()
+    });
+    const btnPlayPause= currentSimPane.addButton({
+        title: 'pause/play',
+    });
+    btnPlayPause.on('click', () => {
+        if (localConfig.simPaused || !localConfig.simStarted) {
+            startSimulation()
+            
+        }else{
+            localConfig.simPaused =true
+        }
+        
+    });
+
+    const pOptions = currentSimPane.addFolder({
+        title: 'Options',
+        expanded: false,   // optional
+      });
+      pOptions.addInput(localConfig, 'simSpeed', {
+        min: 1,
+        max: 2000,
+      });
+    const btnClearData = pOptions.addButton({
+        title: 'clear local data',
+    });
+    btnClearData.on('click', () => {
+        deleteLocalData()
+    });
+    const btnExportData = pOptions.addButton({
+        title: 'export',
+    });
+    btnExportData.on('click', () => {
+        exportData()
+    });
+    const btnImportData = pOptions.addButton({
+        title: 'import',
+    });
+    btnImportData.on('click', () => {
+        let newData = JSON.parse(currentPastedData.toImport)
+        data=newData
+        update()
+    });
+    const btnToggleChart = pOptions.addButton({
+        title: 'Show/hide Chart',
+    });
+    btnToggleChart.on('click', () => {
+        let status = document.querySelector("#chart").style.visibility
+        console.log(status)
+        if (status == "visible") {
+            document.querySelector("#chart").style.visibility = "hidden"
+        }else{document.querySelector("#chart").style.visibility = "visible" }
+    });
+}
+
 function updatePropPane(node){
     if(currentPropPane){
         currentPropPane.remove
@@ -99,10 +162,10 @@ function updatePropPane(node){
     }
     
 
-    currentPropPane.addMonitor(Reports   , 'json', {
-        multiline: true,
-        lineCount: 5,
-      });
+    // currentPropPane.addMonitor(Reports   , 'json', {
+    //     multiline: true,
+    //     lineCount: 5,
+    //   });
     
     currentPropPane.addInput(currentPastedData, 'toImport');
     currentPropPane.on('change', (ev) => {
@@ -183,59 +246,14 @@ function updatePropPane(node){
         addEventNode()
     });
 
-    const btnSimulate = currentPropPane.addButton({
-        title: 'Simulate',
-        label: 'counter',   // optional
-    });
-    btnSimulate.on('click', () => {
-        startSimulation()
-    });
-    const btnPlayPause= currentPropPane.addButton({
-        title: 'pause/play',
-        label: 'counter',   // optional
-    });
-    btnPlayPause.on('click', () => {
-        if (localConfig.simPaused || !localConfig.simStarted) {
-            startSimulation()
-            
-        }else{
-            localConfig.simPaused =true
-        }
-        
-    });
-    currentPropPane.addInput(localConfig, 'simSpeed', {
-        min: 1,
-        max: 2000,
-      });
-    const btnClearData = currentPropPane.addButton({
-        title: 'clear local data',
-        label: 'counter',   // optional
-    });
-    btnClearData.on('click', () => {
-        deleteLocalData()
-    });
-    const btnExportData = currentPropPane.addButton({
-        title: 'export',
-        label: 'counter',   // optional
-    });
-    btnExportData.on('click', () => {
-        exportData()
-    });
-    const btnImportData = currentPropPane.addButton({
-        title: 'import',
-        label: 'counter',   // optional
-    });
-    btnImportData.on('click', () => {
-        let newData = JSON.parse(currentPastedData.toImport)
-        data=newData
-        update()
-    });
+
 
     
 }
 
 function startSimulation() {
     if (localConfig.simStarted==false) {
+        document.querySelector("#chart").style.visibility="visible";
         localConfig.simStarted = true 
         //set up simulation if from the start
         let dupliData = JSON.parse(JSON.stringify(data))
@@ -649,6 +667,7 @@ function start() {
           })
     }
     console.log(reloadTree() );
+    createSimPane();
     render()
     setUpDataGraph()
     
