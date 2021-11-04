@@ -46,7 +46,7 @@ var data = {
             name:"variable_1",
             customColor:"#f27506",
             properties: {
-                name: "test",
+                name: "variable_1",
                 type:"variable",
                 value:5,
                 function:"",
@@ -60,7 +60,7 @@ var data = {
             name:"variable_2",
             customColor:"#f27506",
             properties: {
-                name: "tesst",
+                name: "variable_2",
                 type:"variable",
                 value:15,
                 function:"",
