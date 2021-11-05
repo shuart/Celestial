@@ -435,7 +435,12 @@ function executeNodeFunction(nodes, node, parents, children, frame) {
                 });
             }
             var $={
-                time:Reports.status.frame
+                time:Reports.status.frame,
+                ifThenElse:function (cond,vthen,velse) {
+                    if (cond) {
+                        return vthen           
+                    }else{return velse}
+                }
             }
             console.log(node.id, vars);
             function createFunction1() {
