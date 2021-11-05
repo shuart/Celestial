@@ -18,6 +18,7 @@ var localConfig={
     simPaused:false,
     simStarted:false,
     simCurrentOrderedGraph: undefined,
+    currentCelestialArchive:"",
 }
 
 var Reports = {
@@ -75,7 +76,10 @@ var data = {
 start()
 
 function createSimPane() {
-    currentSimPane= new tweakpane.Pane({container:document.querySelector('.simControls')});
+    currentSimPane= new tweakpane.Pane({
+        container:document.querySelector('.simControls'),
+        //title: localConfig.currentCelestialArchive,
+    });
 
     const tab = currentSimPane.addTab({
         pages: [
@@ -84,8 +88,11 @@ function createSimPane() {
           {title: 'Save'},
         ],
       });
-    
+      tab.pages[0].addMonitor(localConfig, 'currentCelestialArchive');
     tab.pages[0].addMonitor(Reports.status, 'frame', {});
+    console.log(localConfig.currentCelestialArchive)
+
+
     const btnSimulate = tab.pages[0].addButton({
         title: 'Simulate',
     });
@@ -130,7 +137,7 @@ function createSimPane() {
     btnHideLabels.on('click', () => {
         graph.clearAllLabels()
     });
-
+    tab.pages[2].addMonitor(localConfig, 'currentCelestialArchive');
     const btnClearData = tab.pages[2].addButton({
         title: 'clear local data',
     });
@@ -150,6 +157,35 @@ function createSimPane() {
         let newData = JSON.parse(currentPastedData.toImport)
         data=newData
         update()
+    });
+    
+    const btnSaveData = tab.pages[2].addButton({
+        title: 'Save',
+    });
+    btnSaveData.on('click', () => {
+        if (localConfig.currentCelestialArchive != "") {
+            recordTree(data)
+        }else{
+            var promptValue = prompt("Name")
+            recordTree(data, promptValue) 
+            currentSimPane.refresh()
+        }
+    });
+    const btnSaveDataAs = tab.pages[2].addButton({
+        title: 'Save As',
+    });
+    btnSaveDataAs.on('click', () => {
+        var promptValue = prompt("Name")
+        recordTree(data, promptValue || "Untitled")
+        currentSimPane.refresh()
+    });
+    const btnLoadData = tab.pages[2].addButton({
+        title: 'Load',
+    });
+    btnLoadData.on('click', () => {
+        loadOrSaveAs("load")
+        currentSimPane.refresh()
+        console.log(localConfig.currentCelestialArchive)
     });
     tab.pages[2].addInput(currentPastedData, 'toImport');
 
@@ -828,6 +864,95 @@ function render(){
 
 function saveTree(data) {
     window.localStorage.setItem('lastTree', JSON.stringify(data));
+}
+function recordTree(data, newSpace) {
+    if (localStorage.getItem("celestial_archives") === null) {
+        localStorage.setItem("celestial_archives", JSON.stringify({saved:{}}))
+    }
+    if (localStorage.getItem("celestial_archives")) {
+        if (!localConfig.currentCelestialArchive || newSpace) {
+            let currentData = JSON.parse(window.localStorage.getItem("celestial_archives"))
+            currentData.saved[newSpace]= data
+            window.localStorage.setItem("celestial_archives", JSON.stringify(currentData));
+            localConfig.currentCelestialArchive = newSpace
+            
+        }else{
+            let currentData = JSON.parse(window.localStorage.getItem("celestial_archives"))
+            currentData.saved[localConfig.currentCelestialArchive]= data
+            window.localStorage.setItem("celestial_archives", JSON.stringify(currentData));
+        }
+        
+    
+    }
+    
+}
+function loadOrSaveAs(action) {
+
+    var style = document.createElement('style');
+    style.innerHTML = `
+    .celestial_select_menu {
+        position: fixed;
+        top:50%;
+        left:50%;
+        transform :translate(-50%, -50%);
+        width:50%;
+        background-color:#26272c;
+        padding:20px;
+        border-radius: 6px;
+    }
+    .celestial_button{
+        //display:inline-block;
+        padding:0.7em 1.4em;
+        margin:0 0.3em 0.3em 0;
+        border-radius:0.15em;
+        box-sizing: border-box;
+        text-decoration:none;
+        font-family:'Roboto',sans-serif;
+        text-transform:uppercase;
+        font-weight:400;
+        color:#FFFFFF;
+        background-color:#089bc3;
+        box-shadow:inset 0 -0.6em 0 -0.35em rgba(0,0,0,0.17);
+        text-align:center;
+        cursor:pointer;
+        position:relative;
+        }
+    `;
+    document.head.appendChild(style);
+
+    var itemList = document.createElement('div')
+    itemList.classList="celestial_select_menu"
+    // itemList.style.position ="fixed";itemList.style.top ="50%";itemList.style.left ="50%";itemList.style.transform ="translate(-50%, -50%)";
+    // itemList.style.width ="50%";itemList.style.backgroundColor ="#adafb8";
+    let lsData = JSON.parse(window.localStorage.getItem("celestial_archives"));
+    let data = lsData.saved
+
+   
+
+    for (const key in data) {
+        if (Object.hasOwnProperty.call(data, key)) {
+            const element = data[key];
+            var option = document.createElement('div')
+            option.classList="celestial_button"
+            option.innerHTML= key
+            itemList.appendChild(option)
+            option.addEventListener('click', function (event) {
+                if (action == "load") {
+                    console.log("update")
+                    localConfig.currentCelestialArchive = key
+                    loadFromMemory(element)
+                    itemList.remove()
+                }
+            })
+        }
+    }
+    document.body.appendChild(itemList)
+    
+}
+function loadFromMemory(newData) {
+    data=newData
+    
+    render()
 }
 function reloadTree() {
     const tree = window.localStorage.getItem('lastTree');
