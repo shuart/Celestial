@@ -280,6 +280,10 @@ function updatePropPane(node){
         currentPropPane.addInput(node.properties, 'spread');
         currentPropPane.addInput(node.properties, 'offset');
     }
+
+    if (node.properties.type == "event") {
+        currentPropPane.addInput(node.properties, 'condition');
+    }
     currentPropPane.addSeparator();
     currentPropPane.addInput(node.properties, 'observe');
     if (node.properties.type == "event") {
@@ -470,50 +474,54 @@ function resolveNodes(orderedGraph, frame) {
     
 }
 
+function resolveFunction(functionText, nodes, node, parents, children, frame) {
+    var vars={}
+    parents.forEach(element => {
+        var parentNode = nodes.find(n=> n.id == element)
+        vars[ ""+parentNode.name+""]=parentNode.properties.value
+        if (parentNode.properties.type =="event") { //use special prof of events
+            vars[ ""+parentNode.name+"_end"]=parentNode._sim.isFinishing
+            vars[ ""+parentNode.name+"_ended"]=parentNode._sim.finished
+        }
+        if (parentNode.properties.type =="flux") { //use special prof of events
+            vars[ ""+parentNode.name+"_flux"]=parentNode._sim.flux
+            vars[ ""+parentNode.name+"_left"]=parentNode._sim.left//TODO not working
+        }
+    });
+    if (node.properties.type == "flux") {
+        children.forEach(element => {
+            
+            var childNode = nodes.find(n=> n.id == element)
+            if (childNode.properties.type =="stock") {
+                vars[ ""+childNode.name+""]=childNode.properties.value
+            }
+            
+        });
+    }
+    var $={
+        time:Reports.status.frame,
+        ifThenElse:function (cond,vthen,velse) {
+            if (cond) {
+                return vthen           
+            }else{return velse}
+        }
+    }
+    console.log(node.id, vars);
+    function createFunction1() {
+        
+        return new Function ("nodes,$","return " + functionText);
+    }
+
+    var F=createFunction1()
+    var result = F(vars,$)
+    return result
+}
+
 function executeNodeFunction(nodes, node, parents, children, frame) {
     let nodeValue = undefined
     if (node.properties.type == "variable" || node.properties.type == "flux"|| node.properties.type == "event") {
         if ( node.properties.function != "") {
-            var vars={}
-            parents.forEach(element => {
-                var parentNode = nodes.find(n=> n.id == element)
-                vars[ ""+parentNode.name+""]=parentNode.properties.value
-                if (parentNode.properties.type =="event") { //use special prof of events
-                    vars[ ""+parentNode.name+"_end"]=parentNode._sim.isFinishing
-                    vars[ ""+parentNode.name+"_ended"]=parentNode._sim.finished
-                }
-                if (parentNode.properties.type =="flux") { //use special prof of events
-                    vars[ ""+parentNode.name+"_flux"]=parentNode._sim.flux
-                    vars[ ""+parentNode.name+"_left"]=parentNode._sim.left//TODO not working
-                }
-            });
-            if (node.properties.type == "flux") {
-                children.forEach(element => {
-                    
-                    var childNode = nodes.find(n=> n.id == element)
-                    if (childNode.properties.type =="stock") {
-                        vars[ ""+childNode.name+""]=childNode.properties.value
-                    }
-                    
-                });
-            }
-            var $={
-                time:Reports.status.frame,
-                ifThenElse:function (cond,vthen,velse) {
-                    if (cond) {
-                        return vthen           
-                    }else{return velse}
-                }
-            }
-            console.log(node.id, vars);
-            function createFunction1() {
-                
-                return new Function ("nodes,$","return " + node.properties.function);
-            }
-        
-            var F=createFunction1()
-            var result = F(vars,$)
-            nodeValue= result
+            nodeValue= resolveFunction(node.properties.function, nodes, node, parents, children, frame)
         }else{
             nodeValue=  node.properties.value
         }
@@ -593,6 +601,7 @@ function recordStockValueForDelays(nodes, node,frame) {
 
 function updateEvent(nodes, node, parents, children, frame) {
     let isActive = true //check if event is active or not
+    
     parents.forEach(element => {
         var parentNode = nodes.find(n=> n.id == element)
         if (parentNode.properties.type == "event") { //if parent is an event, check if finished
@@ -601,6 +610,11 @@ function updateEvent(nodes, node, parents, children, frame) {
             }
         }
     });
+    if (isActive && node.properties.condition !="") {
+        //check condition
+        let cond = resolveFunction(node.properties.condition, nodes, node, parents, children, frame)
+        if(!cond){isActive = false }
+    }
     if (isActive) {
         if (node._sim.elapsed == 0) {
             node._sim.isStarting = 1
@@ -737,6 +751,7 @@ function addEventNode() {
                 name: name,
                 value:5,
                 function:"",
+                condition:"",
                 duration:5,
                 observe:true,
                 
@@ -828,6 +843,9 @@ function updateNodes(data){
         if (f.properties.type == "table") {
             f.properties.spread = f.properties.spread || 0
             f.properties.offset = f.properties.offset || 0
+        }
+        if (f.properties.type == "event") {
+            f.properties.condition = f.properties.condition || ""
         }
       })
 }
