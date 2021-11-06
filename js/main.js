@@ -139,10 +139,10 @@ function createSimPane() {
     });
     tab.pages[2].addMonitor(localConfig, 'currentCelestialArchive');
     const btnClearData = tab.pages[2].addButton({
-        title: 'clear local data',
+        title: 'Delete Saved Data',
     });
     btnClearData.on('click', () => {
-        deleteLocalData()
+        loadOrSaveAs("delete")
     });
     const btnExportData = tab.pages[2].addButton({
         title: 'export',
@@ -886,6 +886,12 @@ function recordTree(data, newSpace) {
     }
     
 }
+
+function deleteRecord(recordName) {
+    let currentData = JSON.parse(window.localStorage.getItem("celestial_archives"))
+    delete currentData.saved[recordName]
+    window.localStorage.setItem("celestial_archives", JSON.stringify(currentData));
+}
 function loadOrSaveAs(action) {
 
     var style = document.createElement('style');
@@ -917,6 +923,14 @@ function loadOrSaveAs(action) {
         cursor:pointer;
         position:relative;
         }
+        .celestial_close_menu{
+            color: white;
+            font-family: sans-serif;
+            position: absolute;
+            right: 8px;
+            top: 2px;
+            cursor:pointer;
+        }
     `;
     document.head.appendChild(style);
 
@@ -924,6 +938,11 @@ function loadOrSaveAs(action) {
     itemList.classList="celestial_select_menu"
     // itemList.style.position ="fixed";itemList.style.top ="50%";itemList.style.left ="50%";itemList.style.transform ="translate(-50%, -50%)";
     // itemList.style.width ="50%";itemList.style.backgroundColor ="#adafb8";
+    var closeList = document.createElement('div')
+    closeList.innerHTML ="X"
+    closeList.classList="celestial_close_menu"
+    closeList.addEventListener('click', function (event) {itemList.remove()})
+    itemList.appendChild(closeList)
     let lsData = JSON.parse(window.localStorage.getItem("celestial_archives"));
     let data = lsData.saved
 
@@ -942,6 +961,15 @@ function loadOrSaveAs(action) {
                     localConfig.currentCelestialArchive = key
                     loadFromMemory(element)
                     itemList.remove()
+                }
+                if (action == "delete") {
+                    console.log("delete")
+                    //localConfig.currentCelestialArchive = key
+                    if (confirm("Delete "+ key)) {
+                        deleteRecord(key) 
+                        itemList.remove()
+                    }
+                    
                 }
             })
         }
