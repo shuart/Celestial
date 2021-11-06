@@ -278,6 +278,7 @@ function updatePropPane(node){
     }
     if (node.properties.type == "table") {
         currentPropPane.addInput(node.properties, 'spread');
+        currentPropPane.addInput(node.properties, 'offset');
     }
     currentPropPane.addSeparator();
     currentPropPane.addInput(node.properties, 'observe');
@@ -539,7 +540,9 @@ function executeNodeFunction(nodes, node, parents, children, frame) {
                 dataArray = spreadedData
             }
 
-            nodeValue= dataArray[Reports.status.frame] || 1
+            
+
+            nodeValue= dataArray[Reports.status.frame + node.properties.offset] || 1
         }
     }
     
@@ -711,6 +714,7 @@ function addTableNode() {
                 value:1,
                 function:"",
                 spread:0,
+                offset:0,
                 observe:false,
             }
         }
@@ -823,6 +827,7 @@ function updateNodes(data){
         }
         if (f.properties.type == "table") {
             f.properties.spread = f.properties.spread || 0
+            f.properties.offset = f.properties.offset || 0
         }
       })
 }
