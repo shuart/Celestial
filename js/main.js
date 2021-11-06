@@ -138,27 +138,16 @@ function createSimPane() {
         graph.clearAllLabels()
     });
     tab.pages[2].addMonitor(localConfig, 'currentCelestialArchive');
-    const btnClearData = tab.pages[2].addButton({
-        title: 'Delete Saved Data',
+    tab.pages[2].addSeparator();
+    const btnNewFile = tab.pages[2].addButton({
+        title: 'New',
     });
-    btnClearData.on('click', () => {
-        loadOrSaveAs("delete")
+    btnNewFile.on('click', () => {
+        deleteLocalData()
     });
-    const btnExportData = tab.pages[2].addButton({
-        title: 'export',
-    });
-    btnExportData.on('click', () => {
-        exportData()
-    });
-    const btnImportData = tab.pages[2].addButton({
-        title: 'import',
-    });
-    btnImportData.on('click', () => {
-        let newData = JSON.parse(currentPastedData.toImport)
-        data=newData
-        update()
-    });
+
     
+
     const btnSaveData = tab.pages[2].addButton({
         title: 'Save',
     });
@@ -187,6 +176,31 @@ function createSimPane() {
         currentSimPane.refresh()
         console.log(localConfig.currentCelestialArchive)
     });
+    tab.pages[2].addSeparator();
+    const btnClearData = tab.pages[2].addButton({
+        title: 'Delete Saved Data',
+    });
+    btnClearData.on('click', () => {
+        loadOrSaveAs("delete")
+    });
+
+    tab.pages[2].addSeparator();
+    const btnExportData = tab.pages[2].addButton({
+        title: 'export',
+    });
+    btnExportData.on('click', () => {
+        exportData()
+    });
+    const btnImportData = tab.pages[2].addButton({
+        title: 'import',
+    });
+    btnImportData.on('click', () => {
+        let newData = JSON.parse(currentPastedData.toImport)
+        data=newData
+        update()
+    });
+    
+    
     tab.pages[2].addInput(currentPastedData, 'toImport');
 
    
@@ -987,7 +1001,9 @@ function reloadTree() {
     return JSON.parse(tree)
 }
 function deleteLocalData() {
-    window.localStorage.clear();
+    // window.localStorage.clear();
+    window.storage.removeItem('lastTree');
+    location.reload(); 
 }
 
 function exportData() {
