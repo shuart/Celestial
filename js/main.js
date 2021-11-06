@@ -264,9 +264,15 @@ function updatePropPane(node){
     currentPropPane.addInput(node, 'id');
     currentPropPane.addInput(node.properties, 'name');
     currentPropPane.addInput(node.properties, 'type');
-    currentPropPane.addInput(node.properties, 'value');
-    currentPropPane.addInput(node.properties, 'function');
-
+    if (node.properties.type != "table") {
+        currentPropPane.addInput(node.properties, 'value');
+    }
+    if (node.properties.type != "stock") {
+        currentPropPane.addInput(node.properties, 'function');
+    }
+    if (node.properties.type == "table") {
+        currentPropPane.addInput(node.properties, 'spread');
+    }
     currentPropPane.addSeparator();
     currentPropPane.addInput(node.properties, 'observe');
     if (node.properties.type == "event") {
@@ -512,6 +518,26 @@ function executeNodeFunction(nodes, node, parents, children, frame) {
         if (node.properties.function != "" && node.properties.function[0] == "[" ) {
             let dataArray =JSON.parse(node.properties.function)
 
+            if (node.properties.spread >1) {
+                console.log("spreading");
+                let spreadedData =[] 
+                for (let i = 0; i < dataArray.length; i++) {
+                    const element = dataArray[i];
+                    const nextElement = dataArray[i+1]
+                    console.log("spreading");
+                    if (nextElement) {
+                        let localIncrement = (nextElement-element)/node.properties.spread
+                        console.log(localIncrement);
+                        for (let j = 0; j < node.properties.spread; j++) {
+                            console.log(j*localIncrement);
+                            console.log( element,element+(j*localIncrement))
+                            spreadedData.push(parseInt(element)+(j*localIncrement))
+                        }
+                    }
+                }
+                dataArray = spreadedData
+            }
+
             nodeValue= dataArray[Reports.status.frame] || 1
         }
     }
@@ -683,6 +709,7 @@ function addTableNode() {
                 name: name,
                 value:1,
                 function:"",
+                spread:0,
                 observe:false,
             }
         }
@@ -792,6 +819,9 @@ function updateNodes(data){
         if (f.properties.type == "stock") {
             f.properties.canGoNeg = f.properties.canGoNeg || false
             f.properties.delay = f.properties.delay || 0
+        }
+        if (f.properties.type == "table") {
+            f.properties.spread = f.properties.spread || 0
         }
       })
 }
