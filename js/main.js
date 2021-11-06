@@ -19,12 +19,15 @@ var localConfig={
     simStarted:false,
     simCurrentOrderedGraph: undefined,
     currentCelestialArchive:"",
+    chartScale:1,
+    chartOffset:0,
 }
 
 var Reports = {
     status:{
         frame:0,
-        nodes:{}
+        scaledFrames:[],
+        nodes:{},
     },
     graph:{},
     json:""
@@ -120,6 +123,9 @@ function createSimPane() {
         min: 1,
         max: 2000,
       });
+    
+    tab.pages[0].addInput(localConfig, 'chartScale', {});
+    tab.pages[0].addInput(localConfig, 'chartOffset', {});
     tab.pages[0].addSeparator();
     const btnToggleChart = tab.pages[0].addButton({
     title: 'Show/hide Chart',
@@ -519,18 +525,13 @@ function executeNodeFunction(nodes, node, parents, children, frame) {
             let dataArray =JSON.parse(node.properties.function)
 
             if (node.properties.spread >1) {
-                console.log("spreading");
                 let spreadedData =[] 
                 for (let i = 0; i < dataArray.length; i++) {
                     const element = dataArray[i];
                     const nextElement = dataArray[i+1]
-                    console.log("spreading");
                     if (nextElement) {
                         let localIncrement = (nextElement-element)/node.properties.spread
-                        console.log(localIncrement);
                         for (let j = 0; j < node.properties.spread; j++) {
-                            console.log(j*localIncrement);
-                            console.log( element,element+(j*localIncrement))
                             spreadedData.push(parseInt(element)+(j*localIncrement))
                         }
                     }
@@ -1023,7 +1024,7 @@ function loadOrSaveAs(action) {
 }
 function loadFromMemory(newData) {
     data=newData
-    
+    updateNodes(data)
     render()
 }
 function reloadTree() {
@@ -1086,6 +1087,16 @@ function updateChart() {
         }
     }
     chart.updateSeries(newSeries)
+
+    if (localConfig.chartScale !=1 || localConfig.chartOffset != 0) {
+        Reports.status.scaledFrames.push((Reports.status.frame+1)*localConfig.chartScale+localConfig.chartOffset)
+        chart.updateOptions({
+            xaxis: {
+              categories: Reports.status.scaledFrames
+            }
+          })
+    }
+    
 }
 
 function updateGraphLabels() {
