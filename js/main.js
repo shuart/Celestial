@@ -209,42 +209,56 @@ function createSimPane() {
     
     tab.pages[2].addInput(currentPastedData, 'toImport');
 
-   
+    tab.pages[1].addSeparator();
+    const f1 = tab.pages[1].addFolder({
+        title: 'System Dynamics',
+        expanded: true,   // optional
+      });
 
-
-    const btnAddVariable = tab.pages[1].addButton({
+    const btnAddVariable = f1.addButton({
         title: 'Add Variable',
     });
     btnAddVariable.on('click', () => {
         addVariableNode()
     });
 
-    const btnStock = tab.pages[1].addButton({
+    const btnStock = f1.addButton({
         title: 'Add Stock',
     });
     btnStock.on('click', () => {
         addStockNode()
     });
 
-    const btnFlux = tab.pages[1].addButton({
+    const btnFlux = f1.addButton({
         title: 'Add Flux',
     });
     btnFlux.on('click', () => {
         addFluxNode()
     });
 
-    const btnTable = tab.pages[1].addButton({
+    const btnTable = f1.addButton({
         title: 'Add Table',
     });
     btnTable.on('click', () => {
         addTableNode()
     });
-    const btnEvent = tab.pages[1].addButton({
+    tab.pages[1].addSeparator();
+    const f2 = tab.pages[1].addFolder({
+        title: 'Discrete Events',
+        expanded: false,   // optional
+      });
+    const btnEvent = f2.addButton({
         title: 'Add Event',
     });
     btnEvent.on('click', () => {
         addEventNode()
+    });const btnLoop = f2.addButton({
+        title: 'Add Loop',
     });
+    btnLoop.on('click', () => {
+        addLoopNode()
+    });
+    tab.pages[1].addSeparator();
 
     document.addEventListener('keydown', function (event) {
         if (event.key == "ArrowRight") {
@@ -282,6 +296,10 @@ function updatePropPane(node){
     }
 
     if (node.properties.type == "event") {
+        currentPropPane.addInput(node.properties, 'condition');
+    }
+    if (node.properties.type == "loop") {
+        currentPropPane.addInput(node.properties, 'iterations');
         currentPropPane.addInput(node.properties, 'condition');
     }
     currentPropPane.addSeparator();
@@ -366,6 +384,7 @@ function startSimulation() {
                     isStarting:0,
                     isFinishing :0,
                     elapsed:0,
+                    inLoops:{}
                 }
             }
             if (element.properties.type == "stock") {
@@ -377,6 +396,11 @@ function startSimulation() {
                 element._sim = {
                     flux:0,
                     left:0,
+                }
+            }
+            if (element.properties.type == "loop") {
+                element._sim = {
+                    currentIteration:0,
                 }
             }
         });
@@ -452,6 +476,9 @@ function resolveNodes(orderedGraph, frame) {
             updateEvent(orderedGraph.orderedNodes, element,orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id], frame)
         }
         let debug =true
+        if (element.properties.type== "loop") {
+            resolveLoops(orderedGraph.orderedNodes, element,orderedGraph.parentsList[element.id], orderedGraph.adgencyList[element.id], frame)
+        }
         if (debug) {
             console.debug(frame +"|"+element.name +" => "+ element.properties.value)
             if (element.properties.type == "flux") {
@@ -557,6 +584,53 @@ function executeNodeFunction(nodes, node, parents, children, frame) {
     return nodeValue
 }
 
+function resolveLoops(nodes, node, parents, children, frame) {
+    let isActive = true //check if event is active or not
+    parents.forEach(element => {
+        var parentNode = nodes.find(n=> n.id == element)
+        if (parentNode.properties.type == "event") { //if parent is an event, check if finished
+            if (!parentNode._sim.finished) {
+                isActive = false
+            }
+        }
+        if (parentNode.properties.type == "event") { //if parent is a loop trace it
+            node._sim.inLoops = Object.assign({}, node._sim.inLoops, parentNode._sim.inLoops)
+        }
+    });
+    if (node.properties.iterations != 0 && node._sim.currentIteration >= node.properties.iterations) {
+        isActive = false
+    }
+    if (isActive && node.properties.condition !="") {
+        //check condition
+        let cond = resolveFunction(node.properties.condition, nodes, node, parents, children, frame)
+        if(!cond){isActive = false }
+    }
+    if (isActive) {
+        node.properties.value =1
+        nodes.forEach(element => {
+            if (element.properties.type == "event") {
+                if (element._sim.inLoops[node.uuid]) {
+                    element._sim.elapsed =0; //if element is linked to loop reset it
+                    element._sim.finished =0;
+                }
+            }
+            if (element.properties.type == "loop") {
+                // if (element._sim.inLoops[node.uuid] && !node._sim.inLoops[element.uuid]) { //don't reset parents
+                //     element._sim.currentIteration =0; //if element is linked to loop reset it
+                // }
+                if (element._sim.inLoops[node.uuid] && nodes.indexOf(element) < nodes.indexOf(node) && node.uuid != parent.uuid ) { //don't reset parents
+                    element._sim.currentIteration =0; //if element is linked to loop reset it
+                    alert(element.name)
+                }
+            }
+        }); 
+        node._sim.currentIteration ++ 
+    }else{
+        node.properties.value =0
+    }
+    
+}
+
 function updateNearbyStocks(nodes, node, parents, children, frame) {
     //check parents first
     let fluxValue = node.properties.value
@@ -608,6 +682,12 @@ function updateEvent(nodes, node, parents, children, frame) {
             if (!parentNode._sim.finished) {
                 isActive = false
             }
+        }
+        if (parentNode.properties.type == "event") { //if parent is a loop trace it
+            node._sim.inLoops = Object.assign({}, node._sim.inLoops, parentNode._sim.inLoops)
+        }
+        if (parentNode.properties.type == "loop") { //if parent is a loop trace it
+            node._sim.inLoops[parentNode.uuid] = true
         }
     });
     if (isActive && node.properties.condition !="") {
@@ -760,6 +840,33 @@ function addEventNode() {
     )
     update()
 }
+function addLoopNode() {
+    var name = prompt("node name")
+    let newId = uuidv4()
+    data.nodes.push(
+        {
+            id:newId,
+            uuid:newId,
+            x:0,
+            y:0,
+            name:name,
+            customColor:"#25847d",
+            properties: {
+                type:"loop",
+                name: name,
+                value:1,
+                function:"",
+                condition:"",
+                duration:0,
+                condition:"",
+                interations:0,
+                observe:false,
+                
+            }
+        }
+    )
+    update()
+}
 
 function deleteNode() {
     if (selectedNode) {
@@ -847,6 +954,10 @@ function updateNodes(data){
         if (f.properties.type == "event") {
             f.properties.condition = f.properties.condition || ""
         }
+        if (f.properties.type == "loop") {
+            f.properties.condition = f.properties.condition || ""
+            f.properties.iterations = f.properties.iterations || 0
+        }
       })
 }
 
@@ -922,6 +1033,9 @@ function render(){
         }
         if (element.properties.type == "table") {
             element.extraLabel = "M464 32H48C21.49 32 0 53.49 0 80v352c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V80c0-26.51-21.49-48-48-48zM224 416H64v-96h160v96zm0-160H64v-96h160v96zm224 160H288v-96h160v96zm0-160H288v-96h160v96z"
+        }
+        if (element.properties.type == "loop") {
+            element.extraLabel = "M502.61 233.32L278.68 9.39c-12.52-12.52-32.83-12.52-45.36 0L9.39 233.32c-12.52 12.53-12.52 32.83 0 45.36l223.93 223.93c12.52 12.53 32.83 12.53 45.36 0l223.93-223.93c12.52-12.53 12.52-32.83 0-45.36zm-100.98 12.56l-84.21 77.73c-5.12 4.73-13.43 1.1-13.43-5.88V264h-96v64c0 4.42-3.58 8-8 8h-32c-4.42 0-8-3.58-8-8v-80c0-17.67 14.33-32 32-32h112v-53.73c0-6.97 8.3-10.61 13.43-5.88l84.21 77.73c3.43 3.17 3.43 8.59 0 11.76z"
         }
     });
     dupliData.relationships.forEach(element => {
