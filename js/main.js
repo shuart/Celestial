@@ -264,8 +264,13 @@ function createSimPane() {
         if (event.key == "ArrowRight") {
             simulateNextStep()
         }
+        if (event.key == "b") {
+            graph.setSelectionModeActive()
+        }
     })
 }
+
+
 
 function updatePropPane(node){
     if(currentPropPane){
@@ -361,6 +366,18 @@ function updatePropPane(node){
     });
     btnDeleteNode.on('click', () => {
         deleteNode()
+    });
+    const btnDeleteNodes = currentPropPane.addButton({
+        title: 'Delete nodes',
+    });
+    btnDeleteNodes.on('click', () => {
+        deleteNodes()
+    });
+    const btnDuplicateNodes = currentPropPane.addButton({
+        title: 'Duplicate nodes',
+    });
+    btnDuplicateNodes.on('click', () => {
+        duplicateNodes()
     });
     currentPropPane.addSeparator();
 
@@ -875,6 +892,49 @@ function deleteNode() {
     }
     update()
 }
+function deleteNodes() {
+    let selectedNodes = graph.getSelectedNodes()
+    if (selectedNodes) {
+        selectedNodes.forEach(element => {
+            data.nodes = data.nodes.filter(n=>n.uuid != element.uuid)
+            data.relationships = data.relationships.filter(r=>r.source != element.uuid).filter(r=>r.target != element.uuid)
+        });
+        console.log(selectedNodes)
+    }
+    update()
+}
+function duplicateNodes() {
+    let selectedNodes = graph.getSelectedNodes()
+    if (selectedNodes) {
+        var idMatrice = {}
+        var newNodes =[]
+        var newRelations =[]
+        selectedNodes.forEach(element => {
+            newNodes = newNodes.concat(data.nodes.filter(n=>n.uuid == element.uuid))
+            idMatrice[element.uuid] = uuidv4()
+            newRelations = newRelations.concat(data.relationships.filter(r=>r.source == element.uuid))
+            newRelations = newRelations.concat(data.relationships.filter(r=>r.target != element.uuid))
+            // data.nodes = data.nodes.filter(n=>n.uuid != element.uuid)
+            // data.relationships = data.relationships.filter(r=>r.source != element.uuid).filter(r=>r.target != element.uuid)
+        });
+        //DEEPCOPY
+        newNodes = JSON.parse(JSON.stringify(newNodes))
+        newRelations = JSON.parse(JSON.stringify(newRelations))
+        newNodes.forEach(element => {
+            element.id = idMatrice[element.id]
+            element.uuid = idMatrice[element.uuid]
+            element.name = element.name+"_copy"
+        });
+        newRelations.forEach(element => {
+            element.source = idMatrice[element.source] || element.source
+            element.target = idMatrice[element.target] || element.target
+        });
+        console.log(newNodes)
+        data.nodes =data.nodes.concat(newNodes)
+        data.relationships=data.relationships.concat(newRelations)
+    }
+    update()
+}
 
 function renameNode() {
     if (selectedNode) {
@@ -1005,6 +1065,9 @@ function render(){
             updateNodesPositions()
             saveTree(data)
           
+        },
+        onSelectionEnd:function (node) {
+            graph.setSelectionModeInactive()
         },
         onCanvasZoom:function (e) {//TODO finish implementation
             // console.log(e);
