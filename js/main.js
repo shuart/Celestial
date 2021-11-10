@@ -297,6 +297,7 @@ function updatePropPane(node){
     }
     if (node.properties.type == "table") {
         currentPropPane.addInput(node.properties, 'spread');
+        currentPropPane.addInput(node.properties, 'round');
         currentPropPane.addInput(node.properties, 'offset');
     }
 
@@ -591,6 +592,30 @@ function executeNodeFunction(nodes, node, parents, children, frame) {
                 }
                 dataArray = spreadedData
             }
+            if (node.properties.round) {
+                // let spreadedData =[]
+                
+                // for (let i = 0; i < dataArray.length; i++) {
+                //     var currentIncrementTotal = 0
+                //     const element = dataArray[i];
+                //     const nextElement = dataArray[i+1]
+                //     if (nextElement) {
+                //         let localIncrement = (nextElement-element)/node.properties.spread
+                //         // localIncrement = Math.round(localIncrement)
+                        
+                //         for (let j = 0; j < node.properties.spread; j++) {
+                //             currentIncrementTotal +=localIncrement
+                //             spreadedData.push(  parseInt(element)+(Math.round(j*localIncrement) ) )
+                //         }
+                //         // spreadedData.push(parseInt(element)+((nextElement-element)-currentIncrementTotal))
+                //     }
+                // }
+                // dataArray = spreadedData
+                for (let index = 0; index < dataArray.length; index++) {
+                    dataArray[index] = Math.round(dataArray[index]);
+                    
+                }
+            }
 
             
 
@@ -825,6 +850,7 @@ function addTableNode() {
                 value:1,
                 function:"",
                 spread:0,
+                round:false,
                 offset:0,
                 observe:false,
             }
@@ -1009,6 +1035,7 @@ function updateNodes(data){
         }
         if (f.properties.type == "table") {
             f.properties.spread = f.properties.spread || 0
+            f.properties.round = f.properties.round || false
             f.properties.offset = f.properties.offset || 0
         }
         if (f.properties.type == "event") {
@@ -1233,7 +1260,7 @@ function reloadTree() {
 }
 function deleteLocalData() {
     // window.localStorage.clear();
-    window.storage.removeItem('lastTree');
+    window.localStorage.removeItem('lastTree');
     location.reload(); 
 }
 
