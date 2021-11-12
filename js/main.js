@@ -1,5 +1,6 @@
 
 import { stellae } from "./vendor/stellae2.js";
+import { createAdler } from "./adler.js";
 import tweakpane from 'https://cdn.skypack.dev/tweakpane';
 
 import { v4 as uuidv4 } from  'https://cdn.skypack.dev/uuid';
@@ -7,6 +8,7 @@ import { v4 as uuidv4 } from  'https://cdn.skypack.dev/uuid';
 import apexcharts from 'https://cdn.skypack.dev/apexcharts';
 
 //const pane = new tweakpane.Pane();
+
 console.log(stellae)
 var graph = undefined
 var currentGraphTransformation = undefined;
@@ -1206,47 +1208,43 @@ function loadOrSaveAs(action) {
     `;
     document.head.appendChild(style);
 
-    var itemList = document.createElement('div')
-    itemList.classList="celestial_select_menu"
-    // itemList.style.position ="fixed";itemList.style.top ="50%";itemList.style.left ="50%";itemList.style.transform ="translate(-50%, -50%)";
-    // itemList.style.width ="50%";itemList.style.backgroundColor ="#adafb8";
-    var closeList = document.createElement('div')
-    closeList.innerHTML ="X"
-    closeList.classList="celestial_close_menu"
-    closeList.addEventListener('click', function (event) {itemList.remove()})
-    itemList.appendChild(closeList)
     let lsData = JSON.parse(window.localStorage.getItem("celestial_archives"));
     let data = lsData.saved
 
+    let adler = createAdler()
+    adler.createLens("selectMenu",`<div class="celestial_select_menu"><div class="celestial_close_menu">X</div></div>`)
+    adler.createLens("button",`<div class="celestial_button button">%{buttonName}</div>`)
+
+    let supane = adler.addLens("selectMenu",{on:[".celestial_close_menu", "click", ()=> adler.remove()]})
    
 
     for (const key in data) {
         if (Object.hasOwnProperty.call(data, key)) {
             const element = data[key];
-            var option = document.createElement('div')
-            option.classList="celestial_button"
-            option.innerHTML= key
-            itemList.appendChild(option)
-            option.addEventListener('click', function (event) {
-                if (action == "load") {
-                    console.log("update")
-                    localConfig.currentCelestialArchive = key
-                    loadFromMemory(element)
-                    itemList.remove()
-                }
-                if (action == "delete") {
-                    console.log("delete")
-                    //localConfig.currentCelestialArchive = key
-                    if (confirm("Delete "+ key)) {
-                        deleteRecord(key) 
-                        itemList.remove()
+            supane.addLens("button",{
+                buttonName:key,
+                on:[".button", "click", function (event) {
+                    alert("efsefsf")
+                    if (action == "load") {
+                        console.log("update")
+                        localConfig.currentCelestialArchive = key
+                        loadFromMemory(element)
+                        adler.remove()
                     }
-                    
-                }
-            })
+                    if (action == "delete") {
+                        console.log("delete")
+                        //localConfig.currentCelestialArchive = key
+                        if (confirm("Delete "+ key)) {
+                            deleteRecord(key) 
+                            adler.remove()
+                        }
+                        
+                    }
+                }]
+                },".celestial_select_menu")
         }
     }
-    document.body.appendChild(itemList)
+    adler.render()
     
 }
 function loadFromMemory(newData) {
