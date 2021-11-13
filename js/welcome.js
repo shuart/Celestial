@@ -77,6 +77,9 @@ export function renderWelcomeScreen(localConfig, loadElementCallback,deleteRecor
     })
 
     let lsData = JSON.parse(window.localStorage.getItem("celestial_archives"));
+    if (!lsData) {
+        lsData = {saved:{}}
+    }
     let data = lsData.saved
     for (const key in data) {
         if (Object.hasOwnProperty.call(data, key)) {
