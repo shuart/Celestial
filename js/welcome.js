@@ -27,6 +27,7 @@ export function renderWelcomeScreen(localConfig, loadElementCallback,deleteRecor
                 <div class="block"></div>
                 <section>
                  <button class="button is-primary is-rounded is-medium action_new">New Graph</button>
+                 <button class="button is-rounded is-medium action_last">Last session</button>
                 </section>
                 <div class="block"></div>
                 <div class="block"></div>
@@ -68,11 +69,16 @@ export function renderWelcomeScreen(localConfig, loadElementCallback,deleteRecor
 
     let supane = adler.addLens("welcomeContainer",{
         data:{title:"Celestial"},
-        on:[".action_new", "click", ()=>{
-            localConfig.currentCelestialArchive = ""; 
-            loadNewTemplate()
-            adler.remove()} 
+        on:[
+            [".action_new", "click", ()=>{
+                localConfig.currentCelestialArchive = ""; 
+                loadNewTemplate()
+                adler.remove()} 
             ],
+            [".action_last", "click", ()=>{
+                adler.remove()} 
+            ]
+        ],
         
     })
 
