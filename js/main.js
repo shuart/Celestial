@@ -1212,11 +1212,11 @@ function loadOrSaveAs(action) {
     let data = lsData.saved
 
     let adler = createAdler()
-    adler.createLens("selectMenu",`<div class="celestial_select_menu"><div class="celestial_close_menu">X</div></div>`)
+    adler.createLens("selectMenu",`<div class="celestial_select_menu">%{menuName}<div class="celestial_close_menu">X</div></div>`)
     adler.createLens("button",`<div class="celestial_button button">%{buttonName}</div>`)
 
     let supane = adler.addLens("selectMenu",{on:[".celestial_close_menu", "click", ()=> adler.remove()]})
-   
+        
 
     for (const key in data) {
         if (Object.hasOwnProperty.call(data, key)) {
@@ -1224,7 +1224,6 @@ function loadOrSaveAs(action) {
             supane.addLens("button",{
                 buttonName:key,
                 on:[".button", "click", function (event) {
-                    alert("efsefsf")
                     if (action == "load") {
                         console.log("update")
                         localConfig.currentCelestialArchive = key
@@ -1245,6 +1244,7 @@ function loadOrSaveAs(action) {
         }
     }
     adler.render()
+    //supane.set("menuName", "un menu") 
     
 }
 function loadFromMemory(newData) {
