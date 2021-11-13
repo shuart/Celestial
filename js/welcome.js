@@ -26,8 +26,8 @@ export function renderWelcomeScreen(localConfig, loadElementCallback,deleteRecor
                 </section>
                 <div class="block"></div>
                 <section>
-                 <button class="button is-primary is-rounded is-medium action_new">New Graph</button>
-                 <button class="button is-rounded is-medium action_last">Last session</button>
+                 <button class="button is-primary  action_new">New Graph</button>
+                 <button class="button  action_last">Last session</button>
                 </section>
                 <div class="block"></div>
                 <div class="block"></div>
@@ -48,7 +48,7 @@ export function renderWelcomeScreen(localConfig, loadElementCallback,deleteRecor
     <div class="column">
         <div class="card">
             <div class="card-content">
-                <p class="title">
+                <p class="subtitle">
                     ${p.name}
                 </p>
 
