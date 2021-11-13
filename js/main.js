@@ -7,6 +7,8 @@ import { v4 as uuidv4 } from  'https://cdn.skypack.dev/uuid';
 
 import apexcharts from 'https://cdn.skypack.dev/apexcharts';
 
+import { renderWelcomeScreen } from "./welcome.js";
+
 //const pane = new tweakpane.Pane();
 
 console.log(stellae)
@@ -147,12 +149,12 @@ function createSimPane() {
     });
     tab.pages[2].addMonitor(localConfig, 'currentCelestialArchive');
     tab.pages[2].addSeparator();
-    const btnNewFile = tab.pages[2].addButton({
-        title: 'New',
-    });
-    btnNewFile.on('click', () => {
-        deleteLocalData()
-    });
+    // const btnNewFile = tab.pages[2].addButton({
+    //     title: 'New',
+    // });
+    // btnNewFile.on('click', () => {
+    //     deleteLocalData()
+    // });
 
     
 
@@ -176,21 +178,21 @@ function createSimPane() {
         recordTree(data, promptValue || "Untitled")
         currentSimPane.refresh()
     });
-    const btnLoadData = tab.pages[2].addButton({
-        title: 'Load',
-    });
-    btnLoadData.on('click', () => {
-        loadOrSaveAs("load")
-        currentSimPane.refresh()
-        console.log(localConfig.currentCelestialArchive)
-    });
-    tab.pages[2].addSeparator();
-    const btnClearData = tab.pages[2].addButton({
-        title: 'Delete Saved Data',
-    });
-    btnClearData.on('click', () => {
-        loadOrSaveAs("delete")
-    });
+    // const btnLoadData = tab.pages[2].addButton({
+    //     title: 'Load',
+    // });
+    // btnLoadData.on('click', () => {
+    //     loadOrSaveAs("load")
+    //     currentSimPane.refresh()
+    //     console.log(localConfig.currentCelestialArchive)
+    // });
+    // tab.pages[2].addSeparator();
+    // const btnClearData = tab.pages[2].addButton({
+    //     title: 'Delete Saved Data',
+    // });
+    // btnClearData.on('click', () => {
+    //     loadOrSaveAs("delete")
+    // });
 
     tab.pages[2].addSeparator();
     const btnExportData = tab.pages[2].addButton({
@@ -1003,6 +1005,10 @@ async function linkNodes(node1, node2){
     
 }
 
+// function init(){
+//     renderWelcomeScreen(localConfig,loadFromMemory)
+// }
+
 function start() {
     data = reloadTree() || data
     updateNodes(data) //for new version
@@ -1011,6 +1017,7 @@ function start() {
     createSimPane();
     render()
     setUpDataGraph()
+    renderWelcomeScreen(localConfig,loadFromMemory, deleteRecord, loadNewTemplate)
     
 }
 
@@ -1212,8 +1219,8 @@ function loadOrSaveAs(action) {
     let data = lsData.saved
 
     let adler = createAdler()
-    adler.createLens("selectMenu",`<div class="celestial_select_menu">%{menuName}<div class="celestial_close_menu">X</div></div>`)
-    adler.createLens("button",`<div class="celestial_button button">%{buttonName}</div>`)
+    adler.createLens("selectMenu",(p)=>`<div class="celestial_select_menu">${p.menuName}<div class="celestial_close_menu">X</div></div>`)
+    adler.createLens("button",(p)=>`<div class="celestial_button button">${p.buttonName}</div>`)
 
     let supane = adler.addLens("selectMenu",{on:[".celestial_close_menu", "click", ()=> adler.remove()]})
         
@@ -1222,7 +1229,7 @@ function loadOrSaveAs(action) {
         if (Object.hasOwnProperty.call(data, key)) {
             const element = data[key];
             supane.addLens("button",{
-                buttonName:key,
+                data:{buttonName:key},
                 on:[".button", "click", function (event) {
                     if (action == "load") {
                         console.log("update")
@@ -1249,6 +1256,45 @@ function loadOrSaveAs(action) {
 }
 function loadFromMemory(newData) {
     data=newData
+    updateNodes(data)
+    render()
+}
+function loadNewTemplate() {
+    data= {
+        nodes:[
+            {
+                id:id1,
+                uuid:id1,
+                x:0,
+                y:0,
+                name:"variable_1",
+                customColor:"#f27506",
+                properties: {
+                    name: "variable_1",
+                    type:"variable",
+                    value:5,
+                    function:"",
+                }
+            },
+            {
+                id:id2,
+                uuid:id2,
+                x:10,
+                y:10,
+                name:"variable_2",
+                customColor:"#f27506",
+                properties: {
+                    name: "variable_2",
+                    type:"variable",
+                    value:15,
+                    function:"",
+                }
+            }
+        ],
+        relationships:[],
+        notes:[],
+        groups:[]
+    }
     updateNodes(data)
     render()
 }

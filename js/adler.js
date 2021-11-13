@@ -18,8 +18,9 @@ export function createAdler({
     lenses = {},
     name='root',
     textString ="",
-    params=undefined,
+    params={},
     renderAt=undefined,
+    wrapperClass="",
   } = {}){
     var self = {}
     console.log(lenses)
@@ -27,15 +28,21 @@ export function createAdler({
     var renderArray = []
     var instances=[]
     var wrapper = createWrapper()
+  
     
+    function addCSS(cssText){
+        var style = document.createElement('style');
+        style.innerHTML = cssText;
+        document.head.appendChild(style);
+    }
 
-    function createLens(name, string) {
+    function createLens(name, string, wrapperClass) {
         // lens[name] = createComponent(name, string)
         // let newAdler = createAdler({name:name, textString:string, lenses:lenses})
         //  lenses[name] =newAdler
         // return newAdler
 
-        let newAdler = {name:name, textString:string, lenses:lenses}
+        let newAdler = {name:name, textString:string, lenses:lenses, wrapperClass: wrapperClass}
          lenses[name] =newAdler
         return newAdler
 
@@ -44,7 +51,11 @@ export function createAdler({
 
     function createWrapper() {
         let wrapper = document.createElement("div")
-        wrapper.classList ="adler panel"
+        if (wrapperClass != "") {
+            wrapper.classList += ('adler_panel '+wrapperClass)
+        }else{
+            wrapper.classList ="adler_panel"
+        }
         return wrapper
 
     }
@@ -53,7 +64,7 @@ export function createAdler({
         return lenses[lensName]
     }
     function addLens(lensName,params, renderAt) {
-        let newElement = createAdler({name:lenses[lensName].name, textString:lenses[lensName].textString, lenses:lenses[lensName].lenses, container:wrapper, params:params, renderAt:renderAt})
+        let newElement = createAdler({name:lenses[lensName].name, textString:lenses[lensName].textString, lenses:lenses[lensName].lenses, container:wrapper, params:params, renderAt:renderAt, wrapperClass:lenses[lensName].wrapperClass})
         var toRender = {
             lens:newElement,
             params:params,
@@ -64,20 +75,28 @@ export function createAdler({
     }
     function render() {
         
-
+        
         var textToDisplay =textString
-        if (params) {
-            textToDisplay = inject(textString,params)
+        console.log(typeof textString, params.data )
+        if(typeof textString === 'function'){
+            let props = params.data || {}
+            textToDisplay = textString(props)
+        }else if (params.data) {
+            textToDisplay = inject(textString,params.data)
         }
-            wrapper.innerHTML = textToDisplay
-        if (name != "root") {
-            if (renderAt) {
-                container.querySelector(renderAt).appendChild(wrapper)
-            }else{
-                container.appendChild(wrapper)
-            }
+        wrapper.innerHTML = textToDisplay
+        if (wrapper.childElementCount==1) {
+            wrapper = wrapper.firstElementChild; 
+            console.log(wrapper)
+        }
+        // if (name != "root") {
+        //     if (renderAt) {
+        //         container.querySelector(renderAt).appendChild(wrapper)
+        //     }else{
+        //         container.appendChild(wrapper)
+        //     }
             
-        }
+        // }
         console.log(wrapper.innerHTML)
         for (let index = 0; index < renderArray.length; index++) {
             const element = renderArray[index];
@@ -108,7 +127,9 @@ export function createAdler({
             
         }   
         
-        if (name == "root") {
+        if (renderAt) {
+            container.querySelector(renderAt).appendChild(wrapper)
+        }else{
             container.appendChild(wrapper)
         }
         return wrapper
@@ -129,6 +150,7 @@ export function createAdler({
     self.set = set
     self.remove = remove
 
+    self.addCSS = addCSS
     self.addLens = addLens
     self.createLens = createLens
     return self
