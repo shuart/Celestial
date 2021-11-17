@@ -623,7 +623,7 @@ function executeNodeFunction(nodes, node, parents, children, frame) {
 
             
 
-            nodeValue= dataArray[Reports.status.frame + node.properties.offset] || 1
+            nodeValue= dataArray[Reports.status.frame + node.properties.offset] || 0
         }
     }
     
