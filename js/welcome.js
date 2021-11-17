@@ -35,7 +35,7 @@ export function renderWelcomeScreen(localConfig, loadElementCallback,deleteRecor
                     <p class="title">
                         Saved Graphs
                     </p>
-                    <div class="columns is-desktop load_area">
+                    <div class="columns is-multiline is-desktop load_area">
                     
                     </div>
                 </section>
@@ -82,57 +82,112 @@ export function renderWelcomeScreen(localConfig, loadElementCallback,deleteRecor
         
     })
 
-    let lsData = JSON.parse(window.localStorage.getItem("celestial_archives"));
-    if (!lsData) {
-        lsData = {saved:{}}
+    function generateCardArray(params) {
+        let lsData = JSON.parse(window.localStorage.getItem("celestial_archives"));
+        if (!lsData) {
+            lsData = {saved:{}}
+        }
+        let data = lsData.saved
+        let arrayData = []
+        for (const key in data) {
+            if (Object.hasOwnProperty.call(data, key)) {
+                const element = data[key];
+                arrayData.push({
+                    name : key,
+                    element : element
+                })
+      
+            }
+        }
+        return arrayData
     }
-    let data = lsData.saved
-    for (const key in data) {
-        if (Object.hasOwnProperty.call(data, key)) {
-            const element = data[key];
-            let card = adler.addLens("card",{
-                data:{name:key}, 
-                on:[
-                    [".action_load", "click", ()=>{
-                    localConfig.currentCelestialArchive = key; 
-                    loadElementCallback(element); 
-                    adler.remove()} ],
-                    [".action_delete", "click", ()=>{
-                        localConfig.currentCelestialArchive = key; 
-                        if (confirm("Delete this element")) {
-                            deleteRecord(key); 
-                            adler.remove()
-                            adler.render()
-                            location.reload(); 
-                        }
+
+    // let lsData = JSON.parse(window.localStorage.getItem("celestial_archives"));
+    // if (!lsData) {
+    //     lsData = {saved:{}}
+    // }
+    // let data = lsData.saved
+    // let arrayData = []
+    // for (const key in data) {
+    //     if (Object.hasOwnProperty.call(data, key)) {
+    //         const element = data[key];
+    //         arrayData.push({
+    //             name : key,
+    //             element : element
+    //         })
+  
+    //     }
+    // }
+
+    let card = adler.addLens("card",{
+        // data:{name:key}, 
+        data:{name:"key"}, 
+        for:generateCardArray,
+        on:[
+            [".action_load", "click", (e, p)=>{
+            localConfig.currentCelestialArchive = p.name; 
+            loadElementCallback(p.element); 
+            adler.remove()} ],
+            [".action_delete", "click", (e,p)=>{
+                // localConfig.currentCelestialArchive = key; 
+                if (confirm("Delete this element")) {
+                    deleteRecord(p.name); 
+                    adler.remove()
+                    adler.render()
+                    // location.reload(); 
+                }
+                
+            } ]
+        ],
+    }, ".load_area")
+
+
+    // for (const key in data) {
+    //     if (Object.hasOwnProperty.call(data, key)) {
+    //         const element = data[key];
+    //         let card = adler.addLens("card",{
+    //             data:{name:key}, 
+    //             on:[
+    //                 [".action_load", "click", ()=>{
+    //                 localConfig.currentCelestialArchive = key; 
+    //                 loadElementCallback(element); 
+    //                 adler.remove()} ],
+    //                 [".action_delete", "click", ()=>{
+    //                     localConfig.currentCelestialArchive = key; 
+    //                     if (confirm("Delete this element")) {
+    //                         deleteRecord(key); 
+    //                         adler.remove()
+    //                         adler.render()
+    //                         location.reload(); 
+    //                     }
                         
-                        } ]
+    //                     } ]
                     
                 
-                    ],
-                }, ".load_area")
-            // supane.addLens("button",{
-            //     buttonName:key,
-            //     on:[".button", "click", function (event) {
-            //         if (action == "load") {
-            //             console.log("update")
-            //             localConfig.currentCelestialArchive = key
-            //             loadFromMemory(element)
-            //             adler.remove()
-            //         }
-            //         if (action == "delete") {
-            //             console.log("delete")
-            //             //localConfig.currentCelestialArchive = key
-            //             if (confirm("Delete "+ key)) {
-            //                 deleteRecord(key) 
-            //                 adler.remove()
-            //             }
+    //                 ],
+    //             }, ".load_area")
+    //         // supane.addLens("button",{
+    //         //     buttonName:key,
+    //         //     on:[".button", "click", function (event) {
+    //         //         if (action == "load") {
+    //         //             console.log("update")
+    //         //             localConfig.currentCelestialArchive = key
+    //         //             loadFromMemory(element)
+    //         //             adler.remove()
+    //         //         }
+    //         //         if (action == "delete") {
+    //         //             console.log("delete")
+    //         //             //localConfig.currentCelestialArchive = key
+    //         //             if (confirm("Delete "+ key)) {
+    //         //                 deleteRecord(key) 
+    //         //                 adler.remove()
+    //         //             }
                         
-            //         }
-            //     }]
-            //     },".celestial_select_menu")
-        }
-    }
+    //         //         }
+    //         //     }]
+    //         //     },".celestial_select_menu")
+    //     }
+    // }
 
     // let card = adler.addLens("card",{on:[".card", "click", ()=> adler.remove()]}, ".load_area")
     // let card2 = adler.addLens("card",{on:[".card", "click", ()=> adler.remove()]}, ".load_area")
