@@ -262,6 +262,21 @@ function createSimPane() {
     btnLoop.on('click', () => {
         addLoopNode()
     });
+
+    const f3 = tab.pages[1].addFolder({
+        title: 'Helpers',
+        expanded: false,   // optional
+      });
+
+    const btnNote = f3.addButton({
+        title: 'Add Note',
+    });
+    btnNote.on('click', () => {
+        addNote()
+    });
+
+    
+    
     tab.pages[1].addSeparator();
 
     document.addEventListener('keydown', function (event) {
@@ -915,6 +930,23 @@ function addLoopNode() {
     update()
 }
 
+function addNote() {
+    var name = prompt("Note")
+    let newId = uuidv4()
+    data.notes.push(
+        {
+            id:newId,
+            uuid:newId,
+            x:0,
+            y:0,
+            name:name,
+            customColor:"#25847d",
+            content:name
+        }
+    )
+    update()
+}
+
 function deleteNode() {
     if (selectedNode) {
         data.nodes = data.nodes.filter(n=>n.uuid != selectedNode)
@@ -983,7 +1015,12 @@ function deleteRelation(uuid) {
     }
     update()
 }
-
+function deleteNote(uuid) {
+    if (uuid) {
+        data.notes = data.notes.filter(n=>n.id != uuid)
+    }
+    update()
+}
 
 
 // function update(){
@@ -1022,6 +1059,7 @@ function start() {
 }
 
 function updateNodesPositionsInData(data) {
+    console.debug(data);
     if (data.nodesPositions) {
         data.nodesPositions.forEach(f =>{
             var match = data.nodes.find(c => c.uuid == f.uuid)
@@ -1066,6 +1104,8 @@ function update() {
 }
 function updateNodesPositions() {
     data.nodesPositions = graph.exportNodesPosition()
+    data.notes = graph.exportHelpers().notes
+    data.groups = graph.exportHelpers().groups
     updateNodesPositionsInData(data)
 }
 function render(){
@@ -1091,7 +1131,12 @@ function render(){
             saveTree(data)
             //update()
           },
-          onRelationshipDoubleClick:function (d) {
+          onHelperDragEnd:function (node,eventData) {
+            console.log("save tree",graph.exportNodesPosition());
+          updateNodesPositions()
+          saveTree(data)
+        },
+        onRelationshipDoubleClick:function (d) {
             console.log(d)
             var confirmed = confirm("delete"+ d.id)
             if (confirmed) {
@@ -1099,6 +1144,11 @@ function render(){
                 deleteRelation(d.id)
             }
             updateNodesPositions()
+            saveTree(data)
+        },
+        onNoteRemove:function (d) {
+            console.log(d)
+            deleteNote(d.id)
             saveTree(data)
           
         },

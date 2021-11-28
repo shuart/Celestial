@@ -386,6 +386,7 @@ export function stellae(_selector, _options) {
                if (confirm("Remove note?")) {
                  notes=notes.filter(n=>n.uuid!= data.uuid)//remove the note from data
                  nodesNotes=nodesNotes.filter(n=>n!=node)//remove the note from data
+                 options.onNoteRemove(data);
                  // node.dispose()
                  stage.remove(group)
                }
@@ -519,8 +520,10 @@ export function stellae(_selector, _options) {
              let newPosition =intersects[0].point
              selectedHelper.position.x = newPosition.x
              selectedHelper.position.y = -newPosition.z
-             selectedHelper.edata.x = newPosition.x/canvasScale
-             selectedHelper.edata.y = -newPosition.z/canvasScale
+            //  selectedHelper.edata.x = newPosition.x/canvasScale
+            //  selectedHelper.edata.y = -newPosition.z/canvasScale
+             selectedHelper.edata.x = newPosition.x
+             selectedHelper.edata.y = -newPosition.z
            }else {//nothing selected
               // if we haven't selected an object, we check if we might need
               // to reposition our plane. We need to do this here, since
@@ -609,6 +612,11 @@ export function stellae(_selector, _options) {
                 if (currentSelectedNodes[0]) {
                     restoreSelectedElementsSize()
                     currentSelectedNodes = [] //revome selected nodes from selection
+                }
+
+              }else if  (selectedHelper) {
+                if (typeof options.onHelperDragEnd === 'function') {
+                    options.onHelperDragEnd(selectedHelper.edata);
                 }
 
               }
@@ -830,6 +838,7 @@ export function stellae(_selector, _options) {
     function updateHelpers(n,g) {
       // g = [{uuid:"54646", id:'55645646', x:78, y:45, h:88, w:66}]
       // TODO: restore
+      console.debug(n)
       updateNotes(n);
       // updateGroups(g);
     }
@@ -893,7 +902,8 @@ export function stellae(_selector, _options) {
       var textGroup = new THREE.Group();
       textGroup.edata = n
       let text = createTextPlane(n.content)
-      textGroup.position.set(n.x,n.y,0.02); // move geometry up and out
+      console.debug(n)
+      textGroup.position.set(n.x,n.y, 0.02); // move geometry up and out
       textGroup.add(text);
       nodesNotes.push(text)
       stage.add(textGroup);
