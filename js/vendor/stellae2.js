@@ -64,11 +64,13 @@ export function stellae(_selector, _options) {
     var renderer = undefined;
 
     var geometry = undefined
+    var squareGeometry = undefined;
     var material = undefined
     var mainMaterial = undefined
 
     var selectedObject = undefined
     var selectedHelper = undefined
+    var selectedHandle = undefined
     var selectionBox = undefined
     var selectionBoxActive = false
     var selectionBoxPosition = {x:0,y:0,xEnd:0,yEnd:0};
@@ -77,6 +79,8 @@ export function stellae(_selector, _options) {
     var nodesCore = []
     var nodesData = []
     var nodesNotes = []
+    var nodesGroups = []
+    var objectsHandles = []
     var relationshipTextElement=[]
     var spriteBuffer = []
     var spriteTextureBuffer = []
@@ -368,6 +372,8 @@ export function stellae(_selector, _options) {
          var intersects1 = raycaster.intersectObjects(nodesNotes);
          var intersects2 = raycaster.intersectObjects(nodes);
          var intersects3 = raycaster.intersectObjects(relationshipTextElement)
+         var intersects4 = raycaster.intersectObjects(objectsHandles)
+         
          console.log(intersects2);
          if (intersects2.length>0) {
            console.log("node clicked");
@@ -405,6 +411,8 @@ export function stellae(_selector, _options) {
               options.onRelationshipDoubleClick(intersects3[0].object.edata);
           }
             
+         }else if(intersects4.length>0){
+          //  alert("fdsfes")
          }
       }
 
@@ -524,9 +532,26 @@ export function stellae(_selector, _options) {
             //  selectedHelper.edata.y = -newPosition.z/canvasScale
              selectedHelper.edata.x = newPosition.x
              selectedHelper.edata.y = -newPosition.z
+           }else if(selectedHandle){
+             controls.enabled = false;
+             var intersects = raycaster.intersectObject(plane);
+             let newPosition =intersects[0].point
+             let groupData = selectedHandle.linkedGroup.edata
+             let scaleBaseX = groupData.x+groupData.height
+             let scaleBaseY = groupData.y-groupData.width
+              //update
+              groupData.width = newPosition.x+2 - groupData.x
+              groupData.height = (newPosition.z+0.8 + groupData.y)*1
+              selectedHandle.linkedShape.scale.set(groupData.width ,groupData.height ,0.5)
+              selectedHandle.linkedShape.position.set((groupData.width/2)-2,(-groupData.height/2)+groupData.topBarHeight,-0.08)
+              //hanndle
+              selectedHandle.position.set((groupData.width)-2,(-groupData.height)+groupData.topBarHeight,-0.03)
+
+            //  selectedHandle.linkedGroup.
+             console.debug(scaleBaseX,newPosition.z )
            }else {//nothing selected
               // if we haven't selected an object, we check if we might need
-              // to reposition our plane. We need to do this here, since
+              // to reposition our plane. We neez to do this here, since
               // we need to have this position before the onmousedown
               // to calculate the offset.
                var intersects = raycaster.intersectObjects(nodes);
@@ -583,6 +608,7 @@ export function stellae(_selector, _options) {
                  // selectionBox.position.y =-newPosition.z
                } else if (intersects.length > 0) {
                   var intersectsCore = raycaster.intersectObjects(nodesCore);
+                  
                   if (intersectsCore[0]) {
                     // the first one is the object we'll be moving around
                      selectedObject = intersects[0].object;
@@ -594,9 +620,12 @@ export function stellae(_selector, _options) {
                   }
                }else { //if no nodes, check if there is a note
                  var intersects = raycaster.intersectObjects(nodesNotes);
+                 var intersectsHandle = raycaster.intersectObjects(objectsHandles)
                  if (intersects.length > 0) {
                    selectedHelper = intersects[0].object.parent
                    console.log(intersects[0].object.parent);
+                 }else if(intersectsHandle.length > 0){
+                  selectedHandle = intersectsHandle[0].object
                  }
                }
            };
@@ -641,6 +670,7 @@ export function stellae(_selector, _options) {
               //reset Slected oBject Mode
               selectedObject = null;
               selectedHelper = null;
+              selectedHandle = null;
 
               //update sim
               simulation.alphaTarget(0);
@@ -840,7 +870,7 @@ export function stellae(_selector, _options) {
       // TODO: restore
       console.debug(n)
       updateNotes(n);
-      // updateGroups(g);
+      updateGroups(g);
     }
 
     function updateNodes(n) {
@@ -895,6 +925,7 @@ export function stellae(_selector, _options) {
     function updateGroups(g) {
       for (var i = 0; i < g.length; i++) {
         groups.push(g[i])
+        createGroup(g[i])
       }
     }
 
@@ -917,10 +948,46 @@ export function stellae(_selector, _options) {
 
     function createGroup(n) {
       var groupGroup = new THREE.Group();
-      let text = dcText(n.content, 5, 7, 25, 0x000000);      // text #2, TRANSPARENT
-      text.scale.set(0.1,0.1,0.1); // move geometry up and out
-      text.position.set(n.x,n.y,0.02); // move geometry up and out
-      stage.add(text);
+      groupGroup.edata = n
+      n.width = n.width ||8
+      n.height = n.height ||5
+      n.topBarHeight = n.topBarHeight ||0.7
+      let text = createTextPlane(n.content)
+      let shape = createSquare(n)
+      let handle = createCircleHandle(n)
+      //background
+      shape.scale.set(n.width ,n.height ,0.5)
+      shape.position.set((n.width/2)-2,(-n.height/2)+n.topBarHeight,-0.08)
+      //hanndle
+      handle.scale.set(0.2 ,0.2 ,0.5)
+      handle.position.set((n.width)-2,(-n.height)+n.topBarHeight,-0.03)
+      handle.linkedGroup =groupGroup
+      handle.linkedShape =shape
+
+      console.debug(n)
+      groupGroup.position.set(n.x,n.y, 0.02); // move geometry up and out
+
+      groupGroup.add(text);
+      groupGroup.add(shape);
+      groupGroup.add(handle);
+      objectsHandles.push(handle)
+      nodesNotes.push(text) //TODO remiove
+      stage.add(groupGroup);
+    }
+
+    function createCircleHandle() {
+      var scaler = 0.5
+       var material = new THREE.MeshBasicMaterial( { color: 0x6dce9e } );
+       var mesh = new THREE.Mesh( circleGeometry, material)
+       mesh.scale.set( 1.0*scaler, 1.0*scaler, 1.0 );
+       return mesh
+      }
+
+    function createSquare(n) {
+      squareGeometry = new THREE.PlaneGeometry(  1, 1 );
+      const material = new THREE.MeshBasicMaterial( {color: 0xeadfd5, side: THREE.DoubleSide} );
+      const plane = new THREE.Mesh( squareGeometry, material );
+      return plane
     }
 
     // function appendNoteToGraph() {

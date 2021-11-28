@@ -275,6 +275,13 @@ function createSimPane() {
         addNote()
     });
 
+    const btnGroup = f3.addButton({
+        title: 'Add Group',
+    });
+    btnGroup.on('click', () => {
+        addGroup()
+    });
+
     
     
     tab.pages[1].addSeparator();
@@ -934,6 +941,22 @@ function addNote() {
     var name = prompt("Note")
     let newId = uuidv4()
     data.notes.push(
+        {
+            id:newId,
+            uuid:newId,
+            x:0,
+            y:0,
+            name:name,
+            customColor:"#25847d",
+            content:name
+        }
+    )
+    update()
+}
+function addGroup() {
+    var name = prompt("Group")
+    let newId = uuidv4()
+    data.groups.push(
         {
             id:newId,
             uuid:newId,
