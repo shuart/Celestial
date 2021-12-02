@@ -71,6 +71,7 @@ export function stellae(_selector, _options) {
     var selectedObject = undefined
     var selectedHelper = undefined
     var selectedHandle = undefined
+    var currentNodesInActiveGroup =[]
     var selectionBox = undefined
     var selectionBoxActive = false
     var selectionBoxPosition = {x:0,y:0,xEnd:0,yEnd:0};
@@ -526,12 +527,20 @@ export function stellae(_selector, _options) {
            } else if (selectedHelper) {
              var intersects = raycaster.intersectObject(plane);
              let newPosition =intersects[0].point
+             let delta = [-(selectedHelper.edata.x-newPosition.x)/canvasScale, -(selectedHelper.edata.y+newPosition.z)/canvasScale]
              selectedHelper.position.x = newPosition.x
              selectedHelper.position.y = -newPosition.z
             //  selectedHelper.edata.x = newPosition.x/canvasScale
             //  selectedHelper.edata.y = -newPosition.z/canvasScale
              selectedHelper.edata.x = newPosition.x
              selectedHelper.edata.y = -newPosition.z
+             if (selectedHelper.edata.width && currentNodesInActiveGroup[0]) { //if group
+                 simulation.alphaTarget(0.3).restart();
+                for (let index = 0; index < currentNodesInActiveGroup.length; index++) {
+                  const element = currentNodesInActiveGroup[index];
+                  moveNode(delta,element)
+                }
+             }
            }else if(selectedHandle){
              controls.enabled = false;
              var intersects = raycaster.intersectObject(plane);
@@ -621,8 +630,22 @@ export function stellae(_selector, _options) {
                }else { //if no nodes, check if there is a note
                  var intersects = raycaster.intersectObjects(nodesNotes);
                  var intersectsHandle = raycaster.intersectObjects(objectsHandles)
-                 if (intersects.length > 0) {
+                 if (intersects.length > 0) {//if notes or group title
                    selectedHelper = intersects[0].object.parent
+                   if (selectedHelper.edata.width) { //if group
+                      let boundaries = {
+                        r:(selectedHelper.edata.x-((selectedHelper.edata.width-2)/2) )/canvasScale,
+                        l:(selectedHelper.edata.x+((selectedHelper.edata.width-2)) )/canvasScale,
+                        t:(selectedHelper.edata.y+selectedHelper.edata.topBarHeight)/canvasScale,
+                        b:(selectedHelper.edata.y+((-selectedHelper.edata.height)+selectedHelper.edata.topBarHeight))/canvasScale,
+                      }
+                    for (let index = 0; index < nodes.length; index++) {
+                      const element = nodes[index];
+                      if (element.edata.x > boundaries.r &&  element.edata.x < boundaries.l && element.edata.y > boundaries.b && element.edata.y < boundaries.t ) {
+                        currentNodesInActiveGroup.push(element)
+                      }
+                    }
+                  }
                    console.log(intersects[0].object.parent);
                  }else if(intersectsHandle.length > 0){
                   selectedHandle = intersectsHandle[0].object
@@ -671,6 +694,7 @@ export function stellae(_selector, _options) {
               selectedObject = null;
               selectedHelper = null;
               selectedHandle = null;
+              currentNodesInActiveGroup = [],
 
               //update sim
               simulation.alphaTarget(0);
@@ -737,6 +761,18 @@ export function stellae(_selector, _options) {
         }
 
       }
+    }
+
+    function moveNode(delta,currentNode) {
+      console.debug(currentNode)
+      if (!currentNode.edata.fx) {
+        currentNode.edata.fx = currentNode.edata.x
+        currentNode.edata.fy = currentNode.edata.y
+      }
+      currentNode.edata.fx += delta[0]
+      currentNode.edata.fy += delta[1]
+      currentNode.edata.x += delta[0]
+      currentNode.edata.y += delta[1]
     }
 
     function updateNodesPostionInCanvas() {
@@ -1199,10 +1235,10 @@ export function stellae(_selector, _options) {
 
 
 
-    function appendInfoPanel(container) {
-        return container.append('div')
-                        .attr('class', 'stellae-info');
-    }
+    // function appendInfoPanel(container) {
+    //     return container.append('div')
+    //                     .attr('class', 'stellae-info');
+    // }
 
     function appendInfoElement(cls, isNode, property, value) {
         var elem = info.append('a');
@@ -1248,56 +1284,56 @@ export function stellae(_selector, _options) {
     }
 
 
-    function appendGroup() {
-        return group.enter()
-                   .append('g')
-                   .attr('class', "group")
-                   .attr('transform', function (d) {
-                     return "translate(" + d.x + ", " + d.y + ")"
-                   })
-                   .on('click', function(d) {//catch dblclick on canvas
-                       if (typeof options.onGroupClick === 'function') {
+    // function appendGroup() {
+    //     return group.enter()
+    //                .append('g')
+    //                .attr('class', "group")
+    //                .attr('transform', function (d) {
+    //                  return "translate(" + d.x + ", " + d.y + ")"
+    //                })
+    //                .on('click', function(d) {//catch dblclick on canvas
+    //                    if (typeof options.onGroupClick === 'function') {
 
-                       }else {
-                         var newName = prompt("Content", d.content)
-                         if (newName == "") {
-                           if (confirm("Remove Group?")) {
-                             groups=groups.filter(n=>n.uuid!= d.uuid)//remove the group from data
-                             d3.select(this).remove()//remove the linked element
-                           }
-                         }else if (newName) {
-                           d.content= newName
-                           d3.select(this).select('text').text(d.content);
-                         }
-                       }
-                   })
-                   .call(d3.drag()
-                           .on('start', function (d) {
-                             if (!d3.event.active && !linkMode) {
-                                currentGroupedNodes = setGroupedNodeToMove(d, nodes)
-                                 simulation.alphaTarget(0.3).restart();
-                             }
-                           })
-                           .on('drag', function(d) {
-                              d.x += d3.event.dx;
-                              d.y += d3.event.dy;
-                              d3.select(this)
-                                  .attr('transform', "translate(" + d.x  + ", " + d.y  + ")");
-                              //move contained node
-                              moveCurrentGroupedNodes(currentGroupedNodes, [d3.event.dx,d3.event.dy])
+    //                    }else {
+    //                      var newName = prompt("Content", d.content)
+    //                      if (newName == "") {
+    //                        if (confirm("Remove Group?")) {
+    //                          groups=groups.filter(n=>n.uuid!= d.uuid)//remove the group from data
+    //                          d3.select(this).remove()//remove the linked element
+    //                        }
+    //                      }else if (newName) {
+    //                        d.content= newName
+    //                        d3.select(this).select('text').text(d.content);
+    //                      }
+    //                    }
+    //                })
+    //                .call(d3.drag()
+    //                        .on('start', function (d) {
+    //                          if (!d3.event.active && !linkMode) {
+    //                             currentGroupedNodes = setGroupedNodeToMove(d, nodes)
+    //                              simulation.alphaTarget(0.3).restart();
+    //                          }
+    //                        })
+    //                        .on('drag', function(d) {
+    //                           d.x += d3.event.dx;
+    //                           d.y += d3.event.dy;
+    //                           d3.select(this)
+    //                               .attr('transform', "translate(" + d.x  + ", " + d.y  + ")");
+    //                           //move contained node
+    //                           moveCurrentGroupedNodes(currentGroupedNodes, [d3.event.dx,d3.event.dy])
 
-                              if (d.master) {//move master node too
-                                let masters = nodes.filter(e=>d.master == e.id);
-                                moveCurrentGroupedNodes(masters, [d3.event.dx,d3.event.dy])
-                              }
-                            })
-                           .on('end', function () {
-                             if (!d3.event.active) {
-                                 simulation.alphaTarget(0);
-                             }
-                           }));
+    //                           if (d.master) {//move master node too
+    //                             let masters = nodes.filter(e=>d.master == e.id);
+    //                             moveCurrentGroupedNodes(masters, [d3.event.dx,d3.event.dy])
+    //                           }
+    //                         })
+    //                        .on('end', function () {
+    //                          if (!d3.event.active) {
+    //                              simulation.alphaTarget(0);
+    //                          }
+    //                        }));
 
-    }
+    // }
     // function appendLayoutToGroup(group) {
     //     return group.append('rect')
     //                 .attr('class', "groupLayout")
