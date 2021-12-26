@@ -361,6 +361,12 @@ export function stellae(_selector, _options) {
 
       container.onclick = function (event) {
         // get the mouse positions
+        let clickType = "single"
+        if ( event.detail == 1 ) {//singleClick
+          clickType = "single"
+        } else if ( event.detail == 2 ) {
+          clickType = "double"
+        }
          var mouse_x = ( (event.clientX-containerDim.x) / containerDim.width ) * 2 - 1;
          var mouse_y = -( (event.clientY-containerDim.y) / (containerDim.height) ) * 2 + 1;
          console.log(event.clientY )
@@ -377,17 +383,24 @@ export function stellae(_selector, _options) {
          
          console.log(intersects2);
          if (intersects2.length>0) {
-           console.log("node clicked");
-           if (typeof options.onNodeClick === 'function') {
-                options.onNodeClick(intersects2[0].object.edata,{canvasPosition: undefined});
+            console.log("node clicked");
+            if (typeof options.onNodeClick === 'function' && clickType == "single") {
+              options.onNodeClick(intersects2[0].object.edata,{canvasPosition: undefined});
+            }
+            if (typeof options.onNodeDoubleClick === 'function' && clickType == "double") {
+              options.onNodeDoubleClick(intersects2[0].object.edata,{canvasPosition: undefined});
             }
          }else if (intersects1.length>0) {
-           console.log("note clicked");
-           if (typeof options.onNoteClick === 'function') {
-           }else {
-             let node = intersects1[0].object
-             let group = intersects1[0].object.parent
-             let data = group.edata
+            console.log("note clicked");
+            let node = intersects1[0].object
+            let group = intersects1[0].object.parent
+            let data = group.edata
+            if (typeof options.onNoteClick === 'function' && clickType == "single") {
+              options.onNoteClick(group.edata,{canvasPosition: undefined});
+            }else if (typeof options.onNoteDoubleClick === 'function' && clickType == "double") {
+              options.onNoteDoubleClick(group.edata,{canvasPosition: undefined});
+            } else if (clickType == "double") {
+             
              var newName = prompt("Content", data.content)
              if (newName == "") {
                if (confirm("Remove note?")) {
@@ -408,9 +421,12 @@ export function stellae(_selector, _options) {
            }
          }else if(intersects3.length>0){
             console.log("relation clicked");
-            if (typeof options.onNodeClick === 'function') {
+            if (typeof options.onRelationshipClick === 'function' && clickType == "single") {
+              options.onRelationshipClick(intersects3[0].object.edata);
+            }
+            if (typeof options.onRelationshipDoubleClick === 'function' && clickType == "double") {
               options.onRelationshipDoubleClick(intersects3[0].object.edata);
-          }
+            }
             
          }else if(intersects4.length>0){
           //  alert("fdsfes")
