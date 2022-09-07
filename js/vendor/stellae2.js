@@ -1,6 +1,6 @@
-import * as THREE from 'https://cdn.skypack.dev/three';
-import Stats from 'https://cdn.skypack.dev/three/examples/jsm/libs/stats.module'
-import { MapControls } from 'https://cdn.skypack.dev/three/examples/jsm/controls/OrbitControls.js';
+import * as THREE from 'https://cdn.skypack.dev/three@0.130.0';
+import Stats from 'https://cdn.skypack.dev/three@0.130.0/examples/jsm/libs/stats.module'
+import { MapControls } from 'https://cdn.skypack.dev/three@0.130.0/examples/jsm/controls/OrbitControls.js';
 import * as d3 from "https://cdn.skypack.dev/d3@7";
 
 export function stellae(_selector, _options) {
